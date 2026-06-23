@@ -63,7 +63,7 @@ This is how the paper stacks Euclidean operations on hyperbolic representations,
 
 ## 1.2 Why Hyperbolic Here
 
-Hyperbolic space has exponential volume growth, so it can represent tree-like or hierarchical structure with less distortion than same-dimensional Euclidean space. That is the motivation behind the PREFIX experiments and the SNLI sentence-pair setup in Ganea et al. (2018), including the norm behavior discussed around Figures 3-5: useful hierarchy can be encoded radially, with more specific points moving outward in the ball.
+Hyperbolic space has exponential volume growth, so it can represent tree-like or hierarchical structure with less distortion than same-dimensional Euclidean space. That is the motivation behind the PREFIX experiments and the SNLI sentence-pair setup in Ganea et al. (2018), including the norm behavior discussed around Figures 3-5: useful hierarchy can be encoded radially, with more specific points moving outward in the ball. See Section 4 and Figures 3-5 in Ganea et al. for the PREFIX-Z%, SNLI, norm, and accuracy plots behind this behavior.
 
 ## 2. Poincare Ball Geometry
 
@@ -603,6 +603,8 @@ $$
 \lambda_{v_k}^c
 $$
 
+Equivalently, the paper's explicit $(1-c\|v_k\|^2)\|a_k\|$ denominator inside `asinh` is represented here by $\lambda_{v_k}^c$ up to a constant scaling factor that can be absorbed into the learned vector $a_k$.
+
 The paper's sign and absolute-value convention can be absorbed by learning $a_k$:
 
 $$
@@ -680,6 +682,7 @@ The implementation separates parameters into Euclidean and hyperbolic groups:
 - `hyp_opt == "projsgd"` uses the ambient projected update.
 - The code follows the paper's split learning rates for word embeddings vs other hyperbolic parameters: `lr_words` updates hyperbolic embeddings, and `lr_ffnn` updates other hyperbolic parameters.
 - The main divergence is Euclidean parameters: this PyTorch port uses Adam for Euclidean groups, while the hyperbolic groups keep the explicit RSGD/projSGD logic.
+- The hyperbolic update logic is otherwise a direct port of the TensorFlow authors' repo.
 
 For Poincare-ball RSGD, the Euclidean gradient is converted to a Riemannian gradient using the inverse metric factor:
 
