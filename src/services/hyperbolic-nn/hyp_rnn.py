@@ -1,4 +1,5 @@
 import argparse
+import dataclasses
 import os
 import pickle
 import random
@@ -10,6 +11,7 @@ from typing import Sequence
 import numpy as np
 import torch
 import torch.nn.functional as F
+import yaml
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
@@ -133,6 +135,43 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max_eval_batches", type=int, default=0)
     parser.add_argument("--device", type=str, default="")
     return parser
+
+
+def load_yaml_training_defaults(config_path: str) -> dict[str, object]:
+    """Load training defaults from a YAML config file.
+
+    Args:
+        config_path: Path to a YAML file with TrainingConfig field names as keys.
+
+    Returns:
+        Mapping of config field names to values.
+    """
+    with open(config_path, encoding="utf-8") as config_file:
+        raw_config = yaml.safe_load(config_file)
+    if raw_config is None:
+        raise ValueError("Config file is empty: " + config_path)
+    if not isinstance(raw_config, dict):
+        raise ValueError("Config root must be a mapping: " + config_path)
+    valid_fields = {field.name for field in dataclasses.fields(TrainingConfig)}
+    normalized_config: dict[str, object] = {}
+    for key, value in raw_config.items():
+        if key not in valid_fields:
+            raise ValueError("Unknown config key: " + key)
+        normalized_config[key] = value
+    return normalized_config
+
+
+def parse_training_args(argv: Sequence[str] | None = None) -> TrainingConfig:
+    """Parse CLI args, optionally loading defaults from --config YAML first."""
+    config_parser = argparse.ArgumentParser(add_help=False)
+    config_parser.add_argument("--config", type=str, default="")
+    config_args, remaining_argv = config_parser.parse_known_args(argv)
+
+    parser = build_arg_parser()
+    if config_args.config != "":
+        parser.set_defaults(**load_yaml_training_defaults(config_args.config))
+    args = parser.parse_args(remaining_argv)
+    return config_from_args(args)
 
 
 def config_from_args(args: argparse.Namespace) -> TrainingConfig:
@@ -990,9 +1029,7 @@ def train_model(
 
 def run() -> None:
     """Run CLI training end to end."""
-    parser = build_arg_parser()
-    args = parser.parse_args()
-    config = config_from_args(args)
+    config = parse_training_args()
     os.makedirs(os.path.join(config.output_dir, "logs"), exist_ok=True)
     os.makedirs(os.path.join(config.output_dir, "models"), exist_ok=True)
     os.makedirs(os.path.join(config.output_dir, "tb_28may"), exist_ok=True)

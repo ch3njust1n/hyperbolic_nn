@@ -16,34 +16,15 @@ docker compose run --rm hyperbolic-nn python -m pytest -p no:cacheprovider /test
 Smoke training example (outputs go to `./output/` via `OUTPUT_DIR`):
 
 ```bash
+docker compose run --rm hyperbolic-nn python hyp_rnn.py --config=configs/smoke.yaml
+```
+
+Override any YAML value from the CLI:
+
+```bash
 docker compose run --rm hyperbolic-nn python hyp_rnn.py \
-  --base_name='smoke' \
-  --dataset='PRFX10' \
-  --inputs_geom='hyp' \
-  --word_dim=5 \
-  --word_init_avg_norm=0.001 \
-  --cell_type='gru' \
-  --cell_non_lin='id' \
-  --sent_geom='hyp' \
-  --bias_geom='hyp' \
-  --ffnn_geom='hyp' \
-  --ffnn_non_lin='id' \
-  --additional_features='dsq' \
-  --dropout=1.0 \
-  --before_mlr_dim=5 \
-  --mlr_geom='hyp' \
-  --reg_beta=0.0 \
-  --hyp_opt='rsgd' \
-  --lr_ffnn=0.01 \
-  --lr_words=0.1 \
-  --burnin='n' \
-  --proj_eps=1e-5 \
-  --batch_size=2 \
-  --root_path=/usr/src \
-  --device=cuda \
-  --num_epochs=1 \
-  --max_train_batches=1 \
-  --max_eval_batches=1
+  --config=configs/smoke.yaml \
+  --device=cpu
 ```
 
 MNIST sanity check (full train, expect ~0.92 test accuracy):
@@ -83,9 +64,10 @@ Python 3.11+, PyTorch 2.12.1, TorchVision, numpy, matplotlib, tensorboard
 python src/services/hyperbolic-nn/viz_mlr.py
 ```
 
-3. Run the code to reproduce results from Table 1. Example of command that runs hyperbolic GRUs + one hyperbolic fully connected layer + hyperbolic MLR to embed each pair of sentences from the PREFIX10 dataset (assuming the location of this dataset is in the same directory as the source code):
+3. Run the code to reproduce results from Table 1. Example using the PRFX10 hyperbolic GRU config:
+
 ```
-python src/services/hyperbolic-nn/hyp_rnn.py --base_name='' --dataset='PRFX10' --inputs_geom='hyp' --word_dim=5 --word_init_avg_norm=0.001 --cell_type='gru' --cell_non_lin='id' --sent_geom='hyp' --bias_geom='hyp' --ffnn_geom='hyp' --ffnn_non_lin='id' --additional_features='dsq' --dropout=1.0 --before_mlr_dim=5 --mlr_geom='hyp' --reg_beta=0.0 --hyp_opt='rsgd' --lr_ffnn=0.01 --lr_words=0.1 --burnin='n' --proj_eps=1e-5 --batch_size=64 --root_path=./src/services/hyperbolic-nn/
+python src/services/hyperbolic-nn/hyp_rnn.py --config=src/services/hyperbolic-nn/configs/prfx10_gru_hyp.yaml --root_path=./src/services/hyperbolic-nn/
 ```
 
 The data needed in this code lives in the *_dataset folders and was generated as follows:

@@ -3,3 +3,4 @@ matplotlib
 tensorboard
 pytest
 torchvision
+pyyaml
