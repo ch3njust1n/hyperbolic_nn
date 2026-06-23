@@ -4,6 +4,8 @@
 
 This document explains the model implemented in `src/services/hyperbolic-nn/`. The main training path is `hyp_rnn.py`, the recurrent cells are in `rnn_impl.py`, and the Poincare ball operations are in `util.py`.
 
+We follow Ganea et al. (2018) with curvature parameter `c > 0`, ball radius $1/\sqrt{c}$, and the same Poincare-ball convention. The code sometimes squares the paper's distances: when this document says "distance feature", it means squared Poincare distance $d_c(u,v)^2$ unless stated otherwise.
+
 ## 1. Model Overview
 
 The main model is a sentence-pair classifier. Each example contains two padded token sequences and a label:
@@ -34,9 +36,34 @@ flowchart LR
 
 Core implementation references:
 
-- `HyperbolicRNNModel.forward` in `src/services/hyperbolic-nn/hyp_rnn.py`
-- `HypRNN` and `HypGRU` in `src/services/hyperbolic-nn/rnn_impl.py`
-- `mob_add`, `exp_map_zero`, `log_map_zero`, and `poinc_dist_sq` in `src/services/hyperbolic-nn/util.py`
+- `HyperbolicRNNModel.forward` in `src/services/hyperbolic-nn/hyp_rnn.py`, line 649.
+- `HypRNN` and `HypGRU` in `src/services/hyperbolic-nn/rnn_impl.py`, lines 111 and 194.
+- `mob_add`, `exp_map_zero`, `log_map_zero`, and `poinc_dist_sq` in `src/services/hyperbolic-nn/util.py`, lines 50, 175, 183, and 74.
+
+## 1.1 Conventions And Paper Notation
+
+- Dimension $n$ is the embedding and hidden-state width unless a section explicitly introduces another width.
+- $\|\cdot\|$ is the Euclidean norm used inside the Poincare coordinate chart.
+- The code uses $c > 0$ for absolute negative curvature, so the manifold curvature is $-c$.
+- The paper's $D_c^n$ corresponds to this document's $\mathbb{D}_c^n$.
+- The paper's $d_c(u,v)$ corresponds to `poinc_dist_sq(...) ** 0.5`; the code usually stores $d_c(u,v)^2$ as `distance_sq`.
+- Superscript `$^c$` is sometimes omitted when the active curvature is clear.
+
+Geometry conversion used throughout:
+
+$$
+x^{eucl} = \log_0^c(x^{hyp})
+$$
+
+$$
+x^{hyp} = \exp_0^c(x^{eucl})
+$$
+
+This is how the paper stacks Euclidean operations on hyperbolic representations, and it is exactly what this code does when `sent_geom == "hyp"` but downstream layers use Euclidean geometry.
+
+## 1.2 Why Hyperbolic Here
+
+Hyperbolic space has exponential volume growth, so it can represent tree-like or hierarchical structure with less distortion than same-dimensional Euclidean space. That is the motivation behind the PREFIX experiments and the SNLI sentence-pair setup in Ganea et al. (2018), including the norm behavior discussed around Figures 3-5: useful hierarchy can be encoded radially, with more specific points moving outward in the ball.
 
 ## 2. Poincare Ball Geometry
 
@@ -52,7 +79,7 @@ $$
 R = \frac{1}{\sqrt{c}}
 $$
 
-The code keeps vectors inside the ball with `project_hyp_vecs`:
+The code keeps vectors inside the ball with `project_hyp_vecs` in `src/services/hyperbolic-nn/util.py`, line 14:
 
 $$
 x \leftarrow x \cdot \min\left(1, \frac{(1-\epsilon)/\sqrt{c}}{\|x\|}\right)
@@ -79,7 +106,7 @@ $$
 \lambda_x^c = \frac{2}{1-c\|x\|^2}
 $$
 
-This appears in `lambda_x`. As points approach the boundary, the denominator shrinks, so the geometry stretches distances.
+This appears in `lambda_x` in `src/services/hyperbolic-nn/util.py`, line 116. As points approach the boundary, the denominator shrinks, so the geometry stretches distances.
 
 ## 3. Mobius Addition
 
@@ -95,7 +122,7 @@ u \oplus_c v =
 }
 $$
 
-This is implemented by `mob_add`.
+This is implemented by `mob_add` in `src/services/hyperbolic-nn/util.py`, line 50.
 
 Why this formula: in the Poincare ball, translations are isometries, not straight Euclidean shifts. Mobius addition is the gyrovector-space analogue of translation. Near the origin, when norms are small:
 
@@ -111,6 +138,24 @@ $$
 
 That is why hyperbolic layers behave like Euclidean layers near zero but differ strongly near the boundary.
 
+Worked 2D example with $c=1$:
+
+$$
+u=(0.01,0),\quad v=(0,0.02)
+$$
+
+Because $\langle u,v\rangle=0$, $\|u\|^2=0.0001$, and $\|v\|^2=0.0004$:
+
+$$
+u \oplus_1 v
+\approx
+(0.010004,\ 0.019998)
+\approx
+u+v
+$$
+
+The small difference is why Mobius addition locally recovers Euclidean addition.
+
 ## 4. Distance
 
 The model uses squared Poincare distance for sentence-pair features and regularization:
@@ -123,7 +168,7 @@ d_c(u,v)^2 =
 \right)^2
 $$
 
-This is implemented by `poinc_dist_sq`.
+This is implemented by `poinc_dist_sq` in `src/services/hyperbolic-nn/util.py`, line 74. The returned tensor is squared distance, not raw distance.
 
 Derivation sketch:
 
@@ -156,7 +201,7 @@ $$
 \frac{v}{\sqrt{c}\|v\|}
 $$
 
-This is `exp_map_zero`.
+This is `exp_map_zero` in `src/services/hyperbolic-nn/util.py`, line 175.
 
 The logarithmic map returns a ball point to the origin tangent space:
 
@@ -168,7 +213,7 @@ $$
 \frac{y}{\|y\|}
 $$
 
-This is `log_map_zero`.
+This is `log_map_zero` in `src/services/hyperbolic-nn/util.py`, line 183.
 
 At a nonzero base point `x`, the exponential map is:
 
@@ -184,7 +229,7 @@ x \oplus_c
 \right)
 $$
 
-This is `exp_map_x` and is used by Riemannian SGD.
+This is `exp_map_x` in `src/services/hyperbolic-nn/util.py`, line 132, and is used by Riemannian SGD.
 
 The matching logarithmic map is:
 
@@ -196,7 +241,7 @@ $$
 \frac{-x \oplus_c y}{\|-x \oplus_c y\|}
 $$
 
-This is `log_map_x`.
+This is `log_map_x` in `src/services/hyperbolic-nn/util.py`, line 154.
 
 ## 6. Mobius Matrix Multiplication
 
@@ -219,7 +264,7 @@ M \otimes_c x
 \frac{Mx}{\|Mx\|}
 $$
 
-This is `mob_mat_mul`.
+This is `mob_mat_mul` in `src/services/hyperbolic-nn/util.py`, line 190.
 
 Derivation intuition:
 
@@ -266,13 +311,39 @@ h_t =
 \right)
 $$
 
-This matches `HypRNN.forward` and `hyp_non_lin`.
+This matches `HypRNN.forward` in `src/services/hyperbolic-nn/rnn_impl.py`, line 186, and `hyp_non_lin` in `src/services/hyperbolic-nn/util.py`, line 254.
 
 If inputs or biases are configured as Euclidean, the code maps them into the ball first:
 
 $$
 x_t^{hyp}=\exp_0^c(x_t), \quad b^{hyp}=\exp_0^c(b)
 $$
+
+Concrete one-step path for Euclidean input:
+
+$$
+x_t
+\xrightarrow{\exp_0^c}
+x_t^{hyp}
+\xrightarrow{U \otimes_c x_t^{hyp}}
+U_x
+$$
+
+$$
+h_{t-1}
+\xrightarrow{W \otimes_c h_{t-1}}
+W_h
+$$
+
+$$
+\tilde{h}_t = W_h \oplus_c U_x \oplus_c b^{hyp}
+$$
+
+$$
+h_t = \exp_0^c(\phi(\log_0^c(\tilde{h}_t)))
+$$
+
+In code, this is the sequence `exp_map_zero -> mob_mat_mul -> mob_add -> log_map_zero -> phi -> exp_map_zero`.
 
 ## 8. Hyperbolic GRU Cell
 
@@ -295,7 +366,7 @@ $$
 h_t = (1-z_t)\odot h_{t-1} + z_t\odot \tilde{h}_t
 $$
 
-The hyperbolic GRU keeps gates in the tangent space but hidden states in the ball.
+The hyperbolic GRU keeps gates in the tangent space but hidden states in the ball. See `HypGRU.forward` in `src/services/hyperbolic-nn/rnn_impl.py`, line 262.
 
 ```mermaid
 flowchart LR
@@ -392,7 +463,7 @@ This matches `HypGRU.forward`.
 
 ## 9. Sentence Encoding
 
-For each token index, `encode_sentence` updates only active batch items:
+For each token index, `encode_sentence` in `src/services/hyperbolic-nn/hyp_rnn.py`, line 615, updates only active batch items:
 
 $$
 m_{i,t} = \mathbb{1}[\ell_i > t]
@@ -420,7 +491,7 @@ If sentence geometry is hyperbolic, `s_1` and `s_2` are points in `\mathbb{D}_c^
 
 ## 10. Sentence-Pair FFNN Layer
 
-The model computes a distance feature:
+The model computes a distance feature in `HyperbolicRNNModel.forward` in `src/services/hyperbolic-nn/hyp_rnn.py`, lines 660-663. This feature is squared distance:
 
 $$
 \delta =
@@ -468,6 +539,18 @@ $$
 \exp_0^c(\phi(\log_0^c(o)))
 $$
 
+Concrete geometry-mixing rule:
+
+$$
+\text{hyperbolic encoder to Euclidean FFNN:}\quad s^{eucl}=\log_0^c(s)
+$$
+
+$$
+\text{Euclidean dropout output to hyperbolic MLR:}\quad o^{hyp}=\exp_0^c(o)
+$$
+
+This is the same hyperbolic-to-Euclidean handoff used in the paper when a Euclidean classifier is stacked on hyperbolic encoders. The code path is in `src/services/hyperbolic-nn/hyp_rnn.py`, lines 664-706.
+
 ## 11. Euclidean MLR
 
 For Euclidean MLR, each class has a normal vector `a_k` and point `p_k`. The logit is:
@@ -481,7 +564,7 @@ This is a signed distance-like score to a Euclidean hyperplane.
 
 ## 12. Hyperbolic MLR
 
-Hyperbolic MLR uses a point `p_k` in the ball and a tangent normal vector `a_k`.
+Hyperbolic MLR uses a point `p_k` in the ball and a tangent normal vector `a_k`. The implementation is in `src/services/hyperbolic-nn/hyp_rnn.py`, lines 715-726, and the same formula appears in `src/services/hyperbolic-nn/mnist_sanity.py`, lines 65-80.
 
 The code first translates the input by `-p_k`:
 
@@ -504,7 +587,31 @@ $$
 \right)
 $$
 
-This appears in both `HyperbolicRNNModel.forward` and `MnistSanityClassifier.forward`.
+This is Eq. (25) from Ganea et al. (2018) written with the code's translated point $v_k=-p_k\oplus_c x$ and code convention $c>0$.
+
+Algebra link to the paper:
+
+$$
+\lambda_{v_k}^c = \frac{2}{1-c\|v_k\|^2}
+$$
+
+so the denominator term in the paper can be rewritten as:
+
+$$
+\frac{2}{1-c\|v_k\|^2}
+=
+\lambda_{v_k}^c
+$$
+
+The paper's sign and absolute-value convention can be absorbed by learning $a_k$:
+
+$$
+\langle v_k,\hat{a}_k\rangle
+\quad \text{with} \quad
+\hat{a}_k=\frac{a_k}{\|a_k\|}
+$$
+
+because replacing $a_k$ by $-a_k$ flips the signed side of the class hyperplane without changing the represented family of decision surfaces.
 
 ```mermaid
 flowchart TB
@@ -549,7 +656,7 @@ $$
 {\sum_k \exp(\ell_{i,k})}
 $$
 
-If `reg_beta > 0`, the model adds a two-class distance regularizer:
+If `reg_beta > 0`, the model adds a two-class distance regularizer using squared distance. See `compute_loss` in `src/services/hyperbolic-nn/hyp_rnn.py`, lines 731-746:
 
 $$
 \mathcal{L}
@@ -569,6 +676,10 @@ The implementation separates parameters into Euclidean and hyperbolic groups:
 
 - Euclidean parameters use Adam.
 - Hyperbolic parameters use manual RSGD or projected SGD.
+- `hyp_opt == "rsgd"` uses the exponential-map update.
+- `hyp_opt == "projsgd"` uses the ambient projected update.
+- The code follows the paper's split learning rates for word embeddings vs other hyperbolic parameters: `lr_words` updates hyperbolic embeddings, and `lr_ffnn` updates other hyperbolic parameters.
+- The main divergence is Euclidean parameters: this PyTorch port uses Adam for Euclidean groups, while the hyperbolic groups keep the explicit RSGD/projSGD logic.
 
 For Poincare-ball RSGD, the Euclidean gradient is converted to a Riemannian gradient using the inverse metric factor:
 
@@ -593,7 +704,7 @@ $$
 \frac{(1-c\|x\|^2)^2}{4}
 $$
 
-This is implemented by `riemannian_gradient_c`.
+This is implemented by `riemannian_gradient_c` in `src/services/hyperbolic-nn/util.py`, line 236. The trainer logic is in `RiemannianTrainer` in `src/services/hyperbolic-nn/hyp_rnn.py`, lines 749-854.
 
 The RSGD update is:
 
@@ -621,7 +732,7 @@ The code also clips gradients before the hyperbolic update.
 
 ## 15. Why Hyperbolic Geometry Helps
 
-Hyperbolic space grows volume exponentially with radius. This makes it useful for tree-like or hierarchical structure.
+As noted near the model overview, the purpose is representational efficiency for hierarchy-like structure. Hyperbolic space grows volume exponentially with radius:
 
 For an approximate radial coordinate `r`, available volume grows like:
 
@@ -635,7 +746,7 @@ $$
 \sinh(r) \approx \frac{e^r}{2}
 $$
 
-so there is exponentially more representational room near the boundary. Sentence meanings or classes with hierarchical relations can therefore separate with lower distortion than in a same-dimensional Euclidean space.
+so there is exponentially more representational room near the boundary. This ties back to the PREFIX hierarchy experiments, SNLI sentence-pair classification, and the norm plots in Ganea et al. (2018), Figures 3-5.
 
 ## 16. Reference Concepts
 
