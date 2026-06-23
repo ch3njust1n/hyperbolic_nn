@@ -1,0 +1,41 @@
+networks:
+  tpc-network:
+    driver: bridge
+
+services:
+  hyperbolic-nn:
+    image: hyperbolic-nn:${IMAGE_TAG:-v0-dev}
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    build:
+      context: .
+      dockerfile: ./src/services/hyperbolic-nn/Dockerfile
+      args:
+        BUILD_MODE: dev
+    environment:
+      - SEED=${SEED:-42}
+      - MODE=development
+      - ROOT_PATH=/usr/src
+      - OUTPUT_DIR=/jobs
+      - HYPERBOLIC_NN_SERVICE_DIR=/usr/src
+      - HYPERBOLIC_NN_COMPOSE_PATH=/docker-compose.yaml
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    expose:
+      - "6006"
+    networks:
+      - tpc-network
+    volumes:
+      - ./src/services/hyperbolic-nn:/usr/src
+      - ./test:/test:ro
+      - ./docker-compose.yaml:/docker-compose.yaml:ro
+      - ./src/services/hyperbolic-nn/checkpoints:/usr/src/checkpoints:ro
+      - ${OUTPUT_DIR:-./output}:/jobs
+    privileged: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true

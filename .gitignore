@@ -1,0 +1,15 @@
+output/
+jobs/
+agent_workspace/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.ckpt
+*.ckpt.*
+src/services/hyperbolic-nn/logs/
+src/services/hyperbolic-nn/models/
+src/services/hyperbolic-nn/tb_28may/
+src/services/hyperbolic-nn/checkpoints/*
+!src/services/hyperbolic-nn/checkpoints/.gitkeep
+.env

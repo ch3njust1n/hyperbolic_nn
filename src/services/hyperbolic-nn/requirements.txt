@@ -1,0 +1,5 @@
+numpy<2
+matplotlib
+tensorboard
+pytest
+torchvision
