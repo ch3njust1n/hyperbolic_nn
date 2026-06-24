@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inside the Ball &mdash; a guided derivation of hyperbolic neural networks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,900&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  --bg:#0a0a13;--bg2:#0e0d1b;--panel:#11111f;--panel2:#15152a;
+  --rim:#262642;--rim2:#34335a;--ink:#e9e7f4;--muted:#8d88ab;--faint:#615d80;
+  --hyp:#54e2c6;--hyp-d:#1f8c79;--eucl:#f4a259;--eucl-d:#a86a2e;
+  --boundary:#7c77c4;--link:#9be8d8;--gold:#d8b86a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:74px}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Spectral",Georgia,serif;font-weight:300;font-size:19px;line-height:1.74;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:rgba(84,226,198,.25)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.col{max-width:720px;margin:0 auto}
+section.part{padding:30px 0}
+p{margin:0 0 20px}
+a{color:var(--link);text-decoration:none;border-bottom:1px solid rgba(155,232,216,.25)}
+a:hover{border-color:var(--link)}
+h1,h2,h3,h4{font-family:"Fraunces",serif;letter-spacing:-.01em;line-height:1.06}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:12.5px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--hyp);display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.eyebrow::before{content:"";width:26px;height:1px;background:var(--hyp);opacity:.7}
+.eyebrow .n{color:var(--faint)}
+h2{font-size:clamp(28px,4vw,42px);margin:0 0 16px;color:#fff;font-weight:600}
+h3{font-size:23px;color:#fff;font-weight:600;margin:34px 0 12px}
+h4{font-size:19px;color:var(--hyp);font-weight:600;margin:26px 0 8px;font-family:"Fraunces",serif}
+.lede{font-size:21px;line-height:1.6;color:#cfcce0;font-weight:300}
+code,.mono{font-family:"IBM Plex Mono",monospace;font-size:.82em}
+.codepath{color:var(--hyp);background:rgba(84,226,198,.07);padding:1px 6px;border-radius:4px;
+  font-family:"IBM Plex Mono",monospace;font-size:.78em;border:1px solid rgba(84,226,198,.14)}
+em{color:#dcd9ec;font-style:italic}
+strong{color:#fff;font-weight:500}
+.name{color:var(--gold);font-style:normal}
+.eqn{text-align:center;margin:8px 0 6px}
+.eq-note{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--faint);text-align:center;margin:-4px 0 22px;letter-spacing:.04em}
+.callout{border-left:2px solid var(--hyp);padding:4px 0 4px 22px;margin:24px auto;max-width:700px;color:#c8c5dd;font-style:italic;font-size:18px}
+.tiny{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--faint);letter-spacing:.02em}
+
+/* nav + progress */
+.appnav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:0 22px;height:60px;background:rgba(10,10,19,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--rim)}
+.appnav .brand{display:flex;align-items:center;gap:10px;font-family:"Fraunces",serif;font-weight:600;font-size:17px;color:#fff;text-decoration:none;border:none}
+.appnav .brand .dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--hyp);box-shadow:inset 0 0 0 2px var(--bg),0 0 10px rgba(84,226,198,.5);position:relative}
+.appnav .tabs{display:flex;gap:3px;flex-wrap:wrap}
+.appnav .tabs a{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.03em;color:var(--muted);
+  text-decoration:none;padding:7px 11px;border-radius:8px;border:1px solid transparent;transition:.16s;white-space:nowrap}
+.appnav .tabs a:hover{color:var(--ink);border-color:var(--rim2)}
+.appnav .tabs a.active{color:#06231d;background:var(--hyp);font-weight:600}
+.appnav .tabs a .rn{color:var(--faint);margin-right:6px;font-weight:600;font-size:10px}
+.appnav .tabs a.active .rn{color:#06231d}
+.progress{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:rgba(124,119,196,.15)}
+.progress i{display:block;height:100%;width:0;background:var(--hyp);box-shadow:0 0 8px var(--hyp);transition:width .08s linear}
+
+/* cover */
+#cover{position:relative;min-height:84vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:60px 24px 40px;overflow:hidden;border-bottom:1px solid var(--rim)}
+#cover canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.cover-in{position:relative;z-index:2;max-width:780px}
+.cover-tag{font-family:"IBM Plex Mono",monospace;font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:var(--hyp);margin-bottom:24px}
+#cover h1{font-size:clamp(44px,9vw,104px);font-weight:900;color:#fff;margin:0;letter-spacing:-.025em;line-height:.92}
+#cover h1 .it{font-style:italic;font-weight:300;color:var(--hyp)}
+.cover-sub{font-size:clamp(18px,2.4vw,23px);color:#bdb9d6;margin:28px auto 0;max-width:600px;font-weight:300;line-height:1.55}
+.scrollcue{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:2;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.25em;color:var(--faint);text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:8px}
+.scrollcue .bar{width:1px;height:32px;background:linear-gradient(var(--faint),transparent);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* part divider */
+.partbar{max-width:760px;margin:0 auto;padding:58px 28px 6px;display:flex;align-items:center;gap:16px;
+  font-family:"IBM Plex Mono",monospace;text-transform:uppercase;letter-spacing:.16em;font-size:12px;color:var(--faint)}
+.partbar::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--rim2),transparent)}
+.partbar .pl{color:var(--hyp);font-weight:600;letter-spacing:.2em}
+.partbar .pt{color:var(--ink);letter-spacing:.14em}
+
+/* definition box */
+.defn{background:linear-gradient(180deg,rgba(84,226,198,.06),rgba(14,13,27,.35));border:1px solid rgba(84,226,198,.28);
+  border-left:3px solid var(--hyp);border-radius:11px;padding:15px 20px;margin:22px auto;max-width:700px}
+.defn .term{font-family:"Fraunces",serif;font-weight:600;color:#fff;font-size:19px;margin-bottom:5px}
+.defn .term .pron{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--hyp);margin-left:9px;font-weight:400;letter-spacing:.02em}
+.defn p{margin:0 0 8px;font-size:16.5px;color:#d8d5e8;line-height:1.58}
+.defn p:last-child{margin-bottom:0}
+
+/* toolbox (proved lemma) */
+.toolbox{background:linear-gradient(180deg,rgba(216,184,106,.06),rgba(14,13,27,.4));border:1px solid rgba(216,184,106,.32);border-radius:13px;max-width:700px;margin:22px auto;overflow:hidden}
+.toolbox-head{display:flex;align-items:center;gap:10px;padding:11px 20px;border-bottom:1px solid rgba(216,184,106,.22);background:rgba(216,184,106,.05)}
+.toolbox-head .ic{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--gold);font-size:14px}
+.toolbox-head .ti{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.toolbox-head .tn{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint)}
+.toolbox-body{padding:14px 20px 16px;font-size:17px;line-height:1.6}
+.toolbox-body p{margin:0 0 12px;color:#d6d3e6}
+.toolbox-body p:last-child{margin-bottom:0}
+.toolbox .fact{color:#fff}
+.prove{font-size:14.5px;color:var(--muted);font-style:italic}
+.math{overflow-x:auto;overflow-y:hidden;padding:3px 0}
+
+/* derivation card */
+.deriv{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--rim);border-radius:16px;max-width:760px;margin:24px auto;overflow:hidden;box-shadow:0 24px 70px -44px rgba(0,0,0,.9)}
+.deriv-head{padding:16px 24px;border-bottom:1px solid var(--rim);background:rgba(255,255,255,.012)}
+.deriv-head .tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:9px;display:flex;justify-content:space-between;gap:10px}
+.deriv-head .tag b{color:var(--hyp)}
+.deriv-head .tag .src{color:var(--faint);text-transform:none;letter-spacing:.02em}
+.target{text-align:center;font-size:1.03em;color:#fff;padding:3px 0 1px}
+.deriv-body{padding:6px 24px 20px}
+.s{display:grid;grid-template-columns:30px 1fr;gap:0 15px;padding:15px 0;border-bottom:1px dashed var(--rim)}
+.s:last-child{border-bottom:none}
+.s .si{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--hyp);text-align:right;padding-top:2px}
+.s.qed .si{color:var(--eucl)}
+.s .sc{min-width:0}
+.s .sc p{margin:0 0 7px;font-size:16.5px;line-height:1.55;color:#d2cfe2}
+.limit{display:inline-block;margin-top:9px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--hyp);background:rgba(84,226,198,.06);border:1px solid rgba(84,226,198,.16);border-radius:6px;padding:5px 10px}
+.aside{border-left:2px solid var(--rim2);padding:2px 0 2px 16px;margin:9px 0 2px;color:var(--muted);font-size:15.5px;font-style:italic}
+
+/* history plate + timeline */
+.plate{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--rim);border-radius:16px;max-width:760px;margin:26px auto;overflow:hidden;box-shadow:0 24px 70px -44px rgba(0,0,0,.9)}
+.plate-head{padding:15px 26px;border-bottom:1px solid var(--rim);background:rgba(255,255,255,.012);font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.plate-head b{color:var(--hyp)}
+.post{display:grid;grid-template-columns:48px 1fr;gap:0 18px;padding:15px 26px;border-bottom:1px dashed var(--rim);align-items:start}
+.post:last-child{border-bottom:none}
+.post .pn{font-family:"Fraunces",serif;font-size:24px;font-weight:600;color:var(--faint);line-height:1}
+.post .pt{font-size:16.5px;line-height:1.5;color:#d5d2e6}
+.post.fifth{background:rgba(244,162,89,.05)}
+.post.fifth .pn{color:var(--eucl)}
+.post.fifth .pt{color:#f0ddc6}
+.post .small{display:block;color:var(--faint);font-size:13px;margin-top:5px;font-family:"IBM Plex Mono",monospace;letter-spacing:.02em}
+.timeline{max-width:720px;margin:18px auto;border-left:1px solid var(--rim2);padding-left:24px}
+.tl{margin-bottom:18px;position:relative}
+.tl::before{content:"";position:absolute;left:-29px;top:7px;width:9px;height:9px;border-radius:50%;background:var(--hyp);box-shadow:0 0 0 4px var(--bg)}
+.tl .yr{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--hyp);letter-spacing:.08em}
+.tl .ev{font-size:16.5px;color:#d5d2e6;line-height:1.5;margin-top:2px}
+
+/* interactive lab */
+.lab{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--rim);border-radius:16px;margin:26px auto;max-width:860px;overflow:hidden;box-shadow:0 24px 70px -44px rgba(0,0,0,.9)}
+.lab-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:15px 22px;border-bottom:1px solid var(--rim);background:rgba(255,255,255,.012)}
+.lab-head .t{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
+.lab-head .t b{color:var(--hyp);font-weight:600}
+.lab-head .hint{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);letter-spacing:.04em}
+.lab-body{display:grid;grid-template-columns:minmax(0,1fr) 280px}
+.lab-stage{position:relative;display:flex;align-items:center;justify-content:center;padding:24px;min-height:360px;background:radial-gradient(120% 120% at 50% 45%,rgba(84,226,198,.05),transparent 60%)}
+.lab-stage canvas{touch-action:none;display:block;cursor:grab;border-radius:50%}
+.lab-stage canvas.sq{border-radius:8px;cursor:default}
+.lab-stage canvas:active{cursor:grabbing}
+.lab-side{border-left:1px solid var(--rim);padding:20px 20px 22px;display:flex;flex-direction:column;gap:15px;background:rgba(255,255,255,.008)}
+.readout{font-family:"IBM Plex Mono",monospace;font-size:13px;line-height:1.5}
+.readout .row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--rim)}
+.readout .row:last-child{border-bottom:none}
+.readout .k{color:var(--muted)}
+.readout .v{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+.readout .v.hyp{color:var(--hyp)}
+.readout .v.eucl{color:var(--eucl)}
+.readout .v.big{font-size:16px}
+.legend{display:flex;flex-direction:column;gap:7px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:9px}
+.legend i{width:13px;height:3px;border-radius:2px;display:inline-block}
+.dotmark{width:9px;height:9px;border-radius:50%;display:inline-block;border:1.5px solid}
+.note{font-family:"Spectral",serif;font-size:14.5px;line-height:1.55;color:var(--muted);font-weight:300}
+.ctrl{display:flex;flex-direction:column;gap:7px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted)}
+.ctrl .val{color:var(--hyp);font-weight:600}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:3px;background:var(--rim2);outline:none;margin:4px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--hyp);cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 0 1px var(--hyp)}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--hyp);cursor:pointer;border:2px solid var(--bg)}
+.toggle{display:inline-flex;border:1px solid var(--rim2);border-radius:8px;overflow:hidden;font-family:"IBM Plex Mono",monospace;font-size:11px}
+.toggle button{background:transparent;color:var(--muted);border:none;padding:6px 11px;cursor:pointer;letter-spacing:.05em}
+.toggle button.on{background:var(--hyp);color:#06231d;font-weight:600}
+.lab-stage canvas[id=intCanvas],.lab-stage canvas[id=volCanvas]{cursor:default}
+
+/* pipeline */
+.pipe{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:center;padding:30px 24px}
+.pnode{font-family:"IBM Plex Mono",monospace;font-size:11.5px;padding:9px 13px;border-radius:8px;border:1px solid var(--rim2);background:var(--panel2);color:var(--ink);position:relative;transition:.2s;cursor:default}
+.pnode .sub{display:block;color:var(--faint);font-size:9.5px;margin-top:3px;letter-spacing:.03em}
+.pnode.hyp{border-color:rgba(84,226,198,.4)}
+.pnode.eucl{border-color:rgba(244,162,89,.4)}
+.pnode:hover{transform:translateY(-3px);border-color:var(--hyp)}
+.parrow{color:var(--faint);font-family:monospace}
+
+/* worked example + refs + quote */
+.worked{background:linear-gradient(180deg,rgba(84,226,198,.05),rgba(14,13,27,.4));border:1px solid rgba(84,226,198,.28);border-radius:13px;max-width:700px;margin:24px auto;padding:16px 20px}
+.worked .wl{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--hyp);margin-bottom:8px}
+.worked p{margin:0 0 8px;font-size:16px}
+.refs{font-size:15px;color:var(--muted);font-weight:300;max-width:700px;margin:0 auto}
+.refs li{margin-bottom:10px}
+.divider{width:100%;max-width:720px;height:1px;margin:14px auto;background:linear-gradient(90deg,transparent,var(--rim2),transparent)}
+.bigquote{font-family:"Fraunces",serif;font-size:clamp(22px,3.4vw,32px);line-height:1.3;color:#fff;font-weight:300;text-align:center;max-width:760px;margin:0 auto;font-style:italic}
+.bigquote b{color:var(--hyp);font-style:normal;font-weight:600}
+.bookfoot{padding:64px 24px 90px;text-align:center;color:var(--faint);font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.05em;border-top:1px solid var(--rim);margin-top:30px}
+.bookfoot .big{font-family:"Fraunces",serif;font-size:20px;color:#fff;letter-spacing:-.01em;margin-bottom:12px;font-weight:600}
+.katex{font-size:1.0em}
+
+.corr{max-width:780px;margin:22px auto;border:1px solid var(--rim);border-radius:13px;overflow:hidden;overflow-x:auto}
+.corr table{width:100%;border-collapse:collapse;font-size:15.5px}
+.corr th,.corr td{padding:11px 16px;text-align:left;border-bottom:1px solid var(--rim);vertical-align:middle}
+.corr tr:last-child td{border-bottom:none}
+.corr th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.014);font-weight:600}
+.corr td:first-child{color:#cfcce0}
+.corr td.fl{color:var(--eucl);font-variant-numeric:tabular-nums}
+.corr td.hy{color:var(--hyp)}
+.corr td.ref{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--faint);white-space:nowrap}
+
+@media (max-width:760px){
+  body{font-size:17px}
+  .wrap{padding:0 18px}
+  .lab-body{grid-template-columns:1fr}
+  .lab-side{border-left:none;border-top:1px solid var(--rim)}
+  .lab-stage{min-height:320px;padding:18px}
+  .s{grid-template-columns:24px 1fr;gap:0 12px}
+  .post{grid-template-columns:34px 1fr;gap:0 12px;padding:14px 18px}
+}
+@media (max-width:680px){
+  .appnav{height:auto;flex-direction:column;align-items:stretch;gap:8px;padding:10px 14px}
+  .appnav .tabs{justify-content:center}.appnav .brand{justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<nav class="appnav">
+  <a class="brand" href="#cover"><span class="dot"></span>Inside the Ball</a>
+  <div class="tabs">
+    <a data-route="overview" href="#overview"><span class="rn">I</span>Overview</a>
+    <a data-route="history" href="#history"><span class="rn">II</span>History</a>
+    <a data-route="networks" href="#networks"><span class="rn">III</span>Networks</a>
+    <a data-route="geometry" href="#geometry"><span class="rn">IV</span>Geometry</a>
+    <a data-route="layers" href="#layers"><span class="rn">V</span>The Network</a>
+    <a data-route="synthesis" href="#synthesis"><span class="rn">VI</span>Synthesis</a>
+  </div>
+  <div class="progress"><i id="progbar"></i></div>
+</nav>
+
+<!-- ================= COVER ================= -->
+<section id="cover">
+  <canvas id="heroCanvas"></canvas>
+  <div class="cover-in">
+    <div class="cover-tag">A guided derivation · hyperbolic neural networks</div>
+    <h1>Inside<br>the <span class="it">Ball</span></h1>
+    <p class="cover-sub">One continuous path from a single disagreement about parallel lines to a working neural network that thinks in curved space.</p>
+  </div>
+  <div class="scrollcue"><span>begin</span><span class="bar"></span></div>
+</section>
+
+<!-- ================= I · OVERVIEW ================= -->
+<section class="part" id="overview">
+  <div class="partbar"><span class="pl">Part I</span><span class="pt">Overview</span></div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">01</span> What this is</div>
+    <h2>Purpose</h2>
+    <p class="lede"><strong>Hyperbolic neural networks</strong> are ordinary neural networks whose internal points live on a curved surface — the Poincaré ball — instead of in flat space. This builds one from the ground up, every equation included, ending at a working sentence-pair classifier.</p>
+    <p>The reason to bother is <strong>hierarchical data</strong>: taxonomies, ontologies, file trees, category systems. Such data is tree-shaped, and trees grow exponentially — ten children per node gives 10, then 100, then 1,000 nodes at successive depths. A network stores each node as a point and compares nodes by distance, so it must place those exponentially many nodes far enough apart to keep them distinct. Euclidean space cannot supply the room: the volume within radius <span class="mono">$r$</span> grows only polynomially in <span class="mono">$r$</span>, while the tree needs it to grow exponentially.</p>
+    <p>That gap is not abstract; it shows up as two concrete failures. To keep exponentially many descendants apart you must either spend exponentially many coordinates per point — directly more memory and compute per node — or pack the points exponentially close together, in which case their coordinates need more precision than a 32- or 64-bit float can store, so distinct nodes round to the <em>same</em> number and become impossible to tell apart. Both failures show up as high <strong>distortion</strong>: the distance between two points in the embedding stops matching their true distance in the tree. A parent ends up no nearer its child than two unrelated leaves, and the network can no longer read the hierarchy at all.</p>
+    <p>Hyperbolic space closes the gap because its volume grows exponentially with radius — the tree's own rate. The tree then embeds with almost no distortion (root near the centre, each level fanning further out) in as few as <em>two</em> dimensions, so no precision is lost and no extra dimensions are needed. A hyperbolic neural network simply puts its representations on that surface. (Part&nbsp;III shows the volume gap directly.)</p>
+
+    <div class="eyebrow"><span class="n">02</span> The route</div>
+    <h2>How the parts fit together</h2>
+    <p><strong>II &middot; History.</strong> Where hyperbolic geometry comes from — one changed axiom of Euclid — worked through to a concrete surface we can compute on, and the curvature constant <span class="mono">$c$</span>.</p>
+    <p><strong>III &middot; Networks.</strong> What a neural network is, why the space its numbers live in matters, and what moving that space onto the ball means — before any heavy math.</p>
+    <p><strong>IV &middot; Geometry.</strong> The operations a network needs — distance, addition, matrix product, nonlinearity — rebuilt for the ball and derived in full, each with a figure you can manipulate.</p>
+    <p><strong>V &middot; The Network.</strong> Those operations assembled into the model: the recurrent cells, the sentence-combine step, the curved classifier, the loss, and training.</p>
+    <p><strong>VI &middot; Synthesis.</strong> The whole machine traced end to end.</p>
+  </div></div>
+</section>
+
+<!-- ================= II · HISTORY ================= -->
+<section class="part" id="history">
+  <div class="partbar"><span class="pl">Part II</span><span class="pt">History &mdash; where the geometry comes from</span></div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">03</span> Euclid's postulates</div>
+    <h2>Five rules, and a suspect fifth</h2>
+    <p>Around 300&nbsp;BCE <span class="name">Euclid</span> built plane geometry on five postulates — statements assumed without proof. The first four are simple. The fifth is longer and was long suspected of being a theorem in disguise.</p>
+  </div></div>
+  <div class="plate-head">Euclid · <b>Elements</b>, Book I — the five postulates</div>
+  <div class="wrap"><div class="col">
+    <p>The first four alone define <em>neutral geometry</em>: every result they prove holds no matter what you later assume about parallels. The fifth is the branch point. For two thousand years mathematicians tried to <em>prove</em> it from the first four — to show it was redundant.</p>
+
+    <div class="eyebrow"><span class="n">04</span> The attempts</div>
+    <h2>Trying to prove the fifth</h2>
+    <p>The sharpest attempts assumed the fifth was <em>false</em> and looked for a contradiction. None appeared; the assumption just kept producing consistent, if strange, theorems.</p>
+  </div></div>
+  <div class="timeline">
+    <div class="tl"><div class="yr">1733 &mdash; Saccheri</div><div class="ev"><span class="name">Giovanni Saccheri</span> derives many theorems from the negation of the fifth postulate, hoping one will be absurd. He finds results he dislikes, but no contradiction.</div></div>
+    <div class="tl"><div class="yr">1766 &mdash; Lambert</div><div class="ev"><span class="name">Johann Lambert</span> shows that under the negation a triangle's <em>angle defect is proportional to its area</em>, and suggests the geometry behaves like "a sphere of imaginary radius." We will take that remark literally below.</div></div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>By the early 1800s the likely explanation was that there was no contradiction to find — that the fifth postulate is <em>independent</em> of the other four.</p>
+
+    <div class="eyebrow"><span class="n">05</span> The break</div>
+    <h2>A consistent alternative</h2>
+    <p><span class="name">Gauss</span> (privately), <span class="name">Lobachevsky</span> (1829), and <span class="name">Bolyai</span> (1832) stopped trying to prove the fifth and replaced it, then built out the resulting geometry. The replacement is simply the negation of Euclid's parallel rule:</p>
+  </div></div>
+  <div class="defn">
+    <div class="term">The hyperbolic axiom <span class="pron">the one rule that changes</span></div>
+    <p>Euclid's fifth postulate is equivalent to <em>Playfair's axiom</em>: through a point not on a line <span class="mono">$\ell$</span> there is <strong>exactly one</strong> line parallel to <span class="mono">$\ell$</span>. The <strong>hyperbolic axiom</strong> changes "exactly one" to <strong>"at least two"</strong>: through a point not on <span class="mono">$\ell$</span> there are at least two distinct lines that never meet <span class="mono">$\ell$</span>.</p>
+    <p>It is nothing more than the negation of the parallel postulate — the assumption Saccheri and Lambert had pushed on for a century hoping to break it. Keep Euclid's first four postulates, add this one in place of the fifth, and you have hyperbolic geometry. In neutral geometry "at least two" immediately forces infinitely many.</p>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>Bolyai wrote to his father, <em>"I have created a new, another universe out of nothing."</em> Drag the point below: every <span style="color:var(--hyp)">cyan</span> line through it misses <span class="mono">$\ell$</span>. Euclid allowed one such line; here there are infinitely many, bounded by two <em>limiting parallels</em> that approach <span class="mono">$\ell$</span> without ever touching it.</p>
+  </div></div>
+  <div class="lab" id="lab-par">
+    <div class="lab-head"><div class="t"><b>Instrument A</b> — how many parallels?</div><div class="hint">drag the point ✦</div></div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="parCanvas" width="700" height="700" style="width:360px;height:360px"></canvas></div>
+      <div class="lab-side">
+        <div class="readout">
+          <div class="row"><span class="k">lines sampled</span><span class="v">48</span></div>
+          <div class="row"><span class="k">parallel to ℓ</span><span class="v hyp big" id="par-miss">—</span></div>
+          <div class="row"><span class="k">crossing ℓ</span><span class="v eucl big" id="par-cross">—</span></div>
+          <div class="row"><span class="k">Euclid would allow</span><span class="v">1</span></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--hyp)"></i> lines through P that miss ℓ</span>
+          <span><i style="background:var(--eucl)"></i> lines that cross ℓ</span>
+          <span><i style="background:#fff"></i> the line ℓ</span>
+          <span><span class="dotmark" style="border-color:var(--hyp);background:var(--hyp)"></span> the external point P</span>
+        </div>
+        <div class="note">The two cyan lines bordering the amber wedge are the limiting parallels — they meet ℓ only at the circle at infinity.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">06</span> What changes</div>
+    <h2>Triangles lose angle</h2>
+    <p>The new axiom has a measurable effect: a triangle's angles sum to <em>less</em> than <span class="mono">$\pi$</span> (180&deg;), and the shortfall grows with the triangle's size. Stating this precisely needs one idea — curvature.</p>
+  </div></div>
+  <div class="defn">
+    <div class="term">Curvature, and the angle defect <span class="pron">how much a space bends</span></div>
+    <p>Build a triangle from three shortest-path sides and add its interior angles. On a <strong>flat</strong> plane the sum is exactly <span class="mono">$\pi$</span> (180&deg;). On a <strong>sphere</strong> it is more than <span class="mono">$\pi$</span>; the surplus <span class="mono">$(\alpha+\beta+\gamma)-\pi$</span> is the <em>angle excess</em>. On a <strong>saddle</strong> it is less; the shortfall <span class="mono">$\pi-(\alpha+\beta+\gamma)$</span> is the <em>angle defect</em>.</p>
+    <p><strong>Curvature</strong> is that surplus or shortfall measured <em>per unit area</em> of the triangle: positive where angles bulge (sphere), negative where they pinch (saddle), zero when flat. Constant curvature means the same value everywhere; hyperbolic geometry is the constant-negative case. Taking "curvature = angle excess per unit area" as the working definition, the next derivation pins down the number — and along the way proves the curvature of a sphere.</p>
+  </div>
+  <div class="defn">
+    <div class="term">The parameter <span class="mono">$c$</span> <span class="pron">the amount of curving</span></div>
+    <p>The number <span class="mono">$c>0$</span> sets the magnitude of curvature: the hyperbolic plane has curvature <span class="mono">$-c$</span>. Larger <span class="mono">$c$</span> means more sharply curved; smaller <span class="mono">$c$</span> looks Euclidean over a larger region. Curvature is an angle defect divided by an area, so <span class="mono">$c$</span> carries units of <span class="mono">$1/\text{length}^2$</span> — which (derived shortly) gives the space a built-in length <span class="mono">$1/\sqrt c$</span>. Every figure here uses <span class="mono">$c=1$</span>.</p>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>The exact link between angle defect and area is a classical result. Rather than quote it, we can derive it — first on a sphere, where curvature is easy to see, then carry it across to negative curvature.</p>
+  </div></div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — a sphere's curvature is 1/R&sup2;, and defect = c &middot; Area</span><span class="src">counting lunes</span></div>
+      <div class="target">$$(\alpha+\beta+\gamma)-\pi=\frac{\operatorname{Area}}{R^2}\;\;\Longrightarrow\;\; \pi-(\alpha+\beta+\gamma)=c\cdot\operatorname{Area}$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p>Work on a sphere of radius <span class="mono">$R$</span> using only its ordinary geometry — <em>nothing about curvature assumed yet</em>. Two great circles cross at opposite points and cut the sphere into four wedges (<em>lunes</em>). A lune's area is proportional to its opening angle <span class="mono">$\theta$</span> (twice the angle, twice the wedge); the whole sphere (<span class="mono">$\theta=2\pi$</span>) has area <span class="mono">$4\pi R^2$</span>, so a single lune of angle <span class="mono">$\theta$</span> has area <span class="mono">$2\theta R^2$</span>, and a lune together with its opposite has area <span class="mono">$4\theta R^2$</span>.</p></div></div>
+      <div class="s"><div class="si">2</div><div class="sc"><p>Take a triangle with angles <span class="mono">$\alpha,\beta,\gamma$</span> and extend its three sides to full great circles. The three opposite-lune pairs (angles <span class="mono">$\alpha,\beta,\gamma$</span>) together cover the whole sphere, except they cover the triangle and its mirror-image antipode <em>three times</em> instead of once. Counting total area with that multiplicity:</p>
+        <div class="math">$$4R^2(\alpha+\beta+\gamma)=\underbrace{4\pi R^2}_{\text{whole sphere, once}}+\underbrace{4\,\operatorname{Area}}_{\text{triangle + antipode, two extra times each}}.$$</div></div></div>
+      <div class="s"><div class="si">3</div><div class="sc"><p>Divide by <span class="mono">$4R^2$</span> and rearrange. The angle <em>excess</em> over <span class="mono">$\pi$</span> equals the area divided by <span class="mono">$R^2$</span> — derived purely from areas, with no curvature put in by hand:</p>
+        <div class="math">$$(\alpha+\beta+\gamma)-\pi=\frac{\operatorname{Area}}{R^2}.$$</div>
+        <p>This is Girard's theorem (1629). Now apply the working definition from the box — curvature is angle excess per unit area. Reading it off: the sphere's curvature is <span class="mono">$K=\dfrac{\text{excess}}{\operatorname{Area}}=\dfrac{1}{R^2}$</span>. <em>That</em> is where "a sphere of radius <span class="mono">$R$</span> has curvature <span class="mono">$1/R^2$</span>" comes from — it is not assumed, it is the count above.</p></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>Carry the law to negative curvature with Lambert's hint that the hyperbolic plane is "a sphere of imaginary radius." Set <span class="mono">$R=i\rho$</span>, so <span class="mono">$R^2=-\rho^2$</span> and the per-area constant flips sign: <span class="mono">$1/R^2=-1/\rho^2$</span>, which we name <span class="mono">$-c$</span>. Excess becomes <em>deficit</em>:</p>
+        <div class="math">$$(\alpha+\beta+\gamma)-\pi=-c\,\operatorname{Area}\;\Longrightarrow\;\pi-(\alpha+\beta+\gamma)=c\cdot\operatorname{Area}.$$</div>
+        <p class="aside">The imaginary-radius substitution is a heuristic bridge; the honest statement is that "excess (or deficit) = curvature &times; area" is the local Gauss&ndash;Bonnet law for any constant-curvature surface, proven here on the sphere.</p></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>This single formula has heavy consequences. Triangle area is <em>bounded</em>: no triangle exceeds <span class="mono">$\pi/c$</span>, the area of an "ideal" triangle with all three corners at infinity and zero angles. There are <strong>no similar triangles</strong> — fix the three angles and the size is fixed too. And the geometry has an absolute unit of length, set by <span class="mono">$c$</span>. Drag the corners toward the edge: the angle sum collapses while the area saturates.</p>
+  </div></div>
+  <div class="lab" id="lab-tri">
+    <div class="lab-head"><div class="t"><b>Instrument B</b> — defect = c · area</div><div class="hint">drag the three vertices ✦</div></div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="triCanvas" width="700" height="700" style="width:360px;height:360px"></canvas></div>
+      <div class="lab-side">
+        <div class="readout">
+          <div class="row"><span class="k">α</span><span class="v" id="tri-a">—</span></div>
+          <div class="row"><span class="k">β</span><span class="v" id="tri-b">—</span></div>
+          <div class="row"><span class="k">γ</span><span class="v" id="tri-c">—</span></div>
+          <div class="row"><span class="k">angle sum</span><span class="v eucl" id="tri-sum">—</span></div>
+          <div class="row"><span class="k">defect</span><span class="v hyp big" id="tri-def">—</span></div>
+          <div class="row"><span class="k">area (c=1)</span><span class="v hyp" id="tri-area">—</span></div>
+          <div class="row"><span class="k">of max π/c</span><span class="v" id="tri-pct">—</span></div>
+        </div>
+        <div class="note">Push the vertices toward the rim. Angle sum falls toward 0°, defect climbs toward 180°, and the area saturates at its ceiling — an ideal triangle with three vanishing angles.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">07</span> Making it concrete</div>
+    <h2>A model you can compute in</h2>
+    <p>Lobachevsky and Bolyai had a consistent-looking theory, but "no contradiction found" is not "no contradiction exists." The question was settled by building a <em>model</em>.</p>
+  </div></div>
+  <div class="defn">
+    <div class="term">Model <span class="pron">a concrete realization of axioms</span></div>
+    <p>A <strong>model</strong> of a set of axioms is a concrete construction — made from objects you already trust — in which every axiom is true. It assigns the undefined words ("point," "line") to specific things and checks that the axioms hold. Build a model of hyperbolic geometry <em>inside</em> Euclidean geometry, and any contradiction derivable in hyperbolic geometry would translate into one in Euclidean geometry. So a model proves <em>relative consistency</em>: the new system is exactly as trustworthy as the old.</p>
+  </div>
+  <div class="timeline">
+    <div class="tl"><div class="yr">1868 &mdash; Beltrami</div><div class="ev"><span class="name">Eugenio Beltrami</span> builds hyperbolic geometry on a real surface of constant negative curvature — the first model, and the first proof of relative consistency.</div></div>
+    <div class="tl"><div class="yr">1882 &mdash; Poincaré</div><div class="ev"><span class="name">Henri Poincaré</span> finds the <em>conformal disk model</em>: the whole infinite hyperbolic plane drawn inside an open disk, with straight lines shown as circular arcs meeting the boundary at right angles, and angles drawn at true size. This is the model the network uses.</div></div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>The verdict: hyperbolic geometry is consistent exactly when Euclidean geometry is, so the fifth postulate is independent — the two-thousand-year search for a proof was chasing something that cannot exist. We adopt Poincaré's model.</p>
+    <h3>The Poincaré ball</h3>
+    <p>The <strong>Poincaré ball</strong> is the open disk of radius <span class="mono">$1/\sqrt c$</span> — all points with <span class="mono">$c\lVert x\rVert^2<1$</span>, where <span class="mono">$\lVert x\rVert$</span> is ordinary Euclidean length. Before going further, two things owed from earlier: where the radius <span class="mono">$1/\sqrt c$</span> comes from, and what the metric actually is.</p>
+  </div></div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — the ball's radius is 1/&radic;c</span><span class="src">curvature sets a length</span></div>
+      <div class="target">$$\text{radius}=\frac{1}{\sqrt c}$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p><b>Units.</b> An angle in radians is a ratio of two lengths (arc length over radius), so it is a pure number with no units — and the angle defect is just such a number. Area is a length times a length, so it carries units of <span class="mono">$\text{length}^2$</span>. From the last derivation, curvature is defect &divide; area = (pure number) &divide; <span class="mono">$\text{length}^2$</span>, so its units are <span class="mono">$1/\text{length}^2$</span>. Hence <span class="mono">$c$</span> has units <span class="mono">$1/\text{length}^2$</span>, and <span class="mono">$1/\sqrt c$</span> has units of length — the one length the curvature alone can build.</p></div></div>
+      <div class="s"><div class="si">2</div><div class="sc"><p>That length is the hyperbolic version of a sphere's radius. We just <em>proved</em> a sphere of radius <span class="mono">$R$</span> has curvature <span class="mono">$1/R^2$</span>, i.e. <span class="mono">$R=1/\sqrt{K}$</span> — the radius is one over the square root of the curvature. With curvature magnitude <span class="mono">$c$</span>, the matching length is <span class="mono">$\rho=1/\sqrt c$</span>, the space's <strong>radius of curvature</strong> (the same <span class="mono">$\rho$</span> as in the imaginary-radius step).</p></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>The model draws the whole infinite plane inside this finite disk, so distances must grow without bound as you approach the edge — a fixed Euclidean step has to count for ever more hyperbolic length, putting the rim infinitely far away. The metric (next) does exactly that: its stretch factor runs to infinity as <span class="mono">$c\lVert x\rVert^2\to1$</span>, i.e. at Euclidean radius <span class="mono">$\lVert x\rVert=1/\sqrt c$</span>. So the disk's radius is the radius of curvature.</p>
+        <span class="limit">With c = 1 the ball is the unit disk, radius 1 — the choice in every figure here.</span></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>The rule that stretches distances toward the rim is the <em>metric</em>; the amount of stretch at each point is one number, <span class="mono">$\lambda$</span>. Two definitions, then two facts about the space that fix <span class="mono">$\lambda$</span> entirely.</p>
+  </div></div>
+  <div class="defn">
+    <div class="term">Metric <span class="pron">the ruler at each point</span></div>
+    <p>A <strong>metric</strong> is the rule a space uses to measure the length of a tiny step (and the angle between two steps) at each point. Formally it is an inner product <span class="mono">$g_x$</span> — a dot-product-like operation — attached to the small arrows (<em>tangent vectors</em>) at every point <span class="mono">$x$</span>. The length of a path, and so the distance between two points, comes from adding up those tiny measurements along it. Flat space uses one dot product everywhere; a curved space lets <span class="mono">$g_x$</span> vary from point to point.</p>
+  </div>
+  <div class="defn">
+    <div class="term">Homogeneous <span class="pron">same at every point</span></div>
+    <p>A space is <strong>homogeneous</strong> if it looks identical from every point: for any two points there is a distance-preserving motion (an <em>isometry</em>) carrying one to the other. No point is special; there is no true "centre." The hyperbolic plane is homogeneous — the disk picture only makes the middle <em>look</em> special, which is an artifact of the drawing.</p>
+  </div>
+  <div class="defn">
+    <div class="term">Isotropic <span class="pron">same in every direction</span></div>
+    <p>A space is <strong>isotropic</strong> at a point if it looks identical in every direction from there: the isometries fixing that point can rotate any direction into any other. No direction is special. The hyperbolic plane is isotropic at every point. Homogeneous and isotropic together mean the geometry has no distinguishing feature anywhere — and that total symmetry is what pins the metric down.</p>
+  </div>
+  <div class="defn">
+    <div class="term">Conformal factor <span class="mono">$\lambda$</span> <span class="pron">"lambda" — the local stretch</span></div>
+    <p>The Poincaré metric is the ordinary dot product times one positive number, <span class="mono">$\lambda_x^2$</span>. That <span class="mono">$\lambda_x$</span> is the <strong>conformal factor</strong>: how much hyperbolic length is stretched relative to Euclidean length at <span class="mono">$x$</span>. <em>Conformal</em> means the stretch is the same in every direction, so angles are preserved. Near the centre (<span class="mono">$\lambda\approx2$</span>) the space is almost flat; toward the rim (<span class="mono">$\lambda\to\infty$</span>) a tiny Euclidean step becomes an enormous hyperbolic distance — which is how an infinite space fits in a finite disk.</p>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>Now we find <span class="mono">$\lambda$</span>. Two facts about the space do it between them: its <em>symmetry</em> forces the shape of <span class="mono">$\lambda$</span> (how it depends on position), and its <em>curvature</em> forces the single constant out in front — the mysterious 2. The symmetry step needs the disk's own family of symmetry maps, so we meet those first; the curvature step needs one standard formula, in the toolbox below.</p>
+  </div></div>
+  <div class="defn">
+    <div class="term">Möbius transformation (of the disk) <span class="pron">the disk's symmetry maps</span></div>
+    <p>It is far easier to work if we treat the flat plane as the <strong>complex numbers</strong>: a point <span class="mono">$(x_1,x_2)$</span> is written as one number <span class="mono">$z=x_1+ix_2$</span>, its Euclidean length is <span class="mono">$\lvert z\rvert$</span>, and <span class="mono">$\bar z$</span> is its mirror image (the <em>conjugate</em>). This is only a relabelling, but it turns the disk's symmetry maps into one-line formulas.</p>
+    <p>A <strong>Möbius transformation</strong> of the disk is a map of the form <span class="mono">$\varphi_a(z)=\dfrac{z-a}{1-\bar a z}$</span>, one for each interior point <span class="mono">$a$</span> (optionally followed by a rotation). Two properties matter. It sends the unit disk onto itself one-to-one, and it <em>preserves angles</em>. And it does one concrete job: it slides the point <span class="mono">$a$</span> to the centre, because <span class="mono">$\varphi_a(a)=\frac{a-a}{1-\lvert a\rvert^2}=0$</span>.</p>
+    <p><b>Why these are the isometries.</b> Homogeneity (defined above) says: for any point there must be a distance-preserving motion — an isometry — carrying it to the centre. The metric is conformal, so any isometry also preserves angles; and it must keep the disk the disk. The maps that send the disk to itself preserving angles are exactly the <span class="mono">$\varphi_a$</span> (a classical fact of complex analysis, the Schwarz lemma). So the hyperbolic isometries can only be these. We will use that the true metric cannot change under any <span class="mono">$\varphi_a$</span>.</p>
+  </div>
+  <div class="toolbox">
+    <div class="toolbox-head"><span class="ic">&boxplus;</span><span class="ti">Toolbox &middot; curvature of a conformal metric</span><span class="tn">&middot;</span></div>
+    <div class="toolbox-body">
+      <p class="fact">For a 2-D metric that is the flat one scaled by a function, <span class="mono">$ds=\lambda(x)\,\lVert dx\rVert$</span>, the Gaussian curvature is</p>
+      <div class="math">$$K=-\frac{1}{\lambda^2}\,\Delta\big(\ln\lambda\big),\qquad \Delta=\partial_{x_1}^2+\partial_{x_2}^2.$$</div>
+      <p class="prove">This is the standard curvature formula in conformal coordinates (<span class="mono">$\Delta$</span> is the ordinary Laplacian — the sum of unmixed second derivatives). Deriving it needs Christoffel symbols, so we take it as given and use it to pin down <span class="mono">$\lambda$</span>.</p>
+    </div>
+  </div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — the conformal factor, and why the 2</span><span class="src">symmetry fixes the shape, curvature the scale</span></div>
+      <div class="target">$$\lambda_x=\frac{2}{1-c\lVert x\rVert^2}$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc">
+        <p><b>What we are solving for.</b> "Conformal" means the metric is the flat ruler scaled at each point by an unknown positive function: a tiny step of Euclidean length <span class="mono">$\lvert dz\rvert$</span> has hyperbolic length <span class="mono">$ds=\lambda(z)\,\lvert dz\rvert$</span>. The whole task is to find that one function <span class="mono">$\lambda(z)$</span>. We work in the unit disk (<span class="mono">$c=1$</span>) for clean formulas and restore <span class="mono">$c$</span> at the end.</p></div></div>
+      <div class="s"><div class="si">2</div><div class="sc">
+        <p><b>The condition <span class="mono">$\lambda$</span> must satisfy.</b> Each map <span class="mono">$\varphi_a$</span> is an isometry, so it cannot change the length of any step. If <span class="mono">$w=\varphi_a(z)$</span>, a step transforms by the derivative, <span class="mono">$\lvert dw\rvert=\lvert\varphi_a'(z)\rvert\,\lvert dz\rvert$</span>. Demanding equal hyperbolic length before and after, <span class="mono">$\lambda(w)\lvert dw\rvert=\lambda(z)\lvert dz\rvert$</span>, gives the rule <span class="mono">$\lambda$</span> must obey:</p>
+        <div class="math">$$\lambda\big(\varphi_a(z)\big)\,\lvert\varphi_a'(z)\rvert=\lambda(z)\qquad\text{for every }a.$$</div></div></div>
+      <div class="s"><div class="si">3</div><div class="sc">
+        <p><b>Two facts about <span class="mono">$\varphi_a$</span>.</b> Both are short algebra, using only <span class="mono">$\lvert w\rvert^2=w\bar w$</span>. The quotient rule gives the derivative; multiplying out <span class="mono">$1-\lvert\varphi_a\rvert^2$</span> gives the second:</p>
+        <div class="math">$$\lvert\varphi_a'(z)\rvert=\frac{1-\lvert a\rvert^2}{\lvert 1-\bar a z\rvert^2},\qquad 1-\lvert\varphi_a(z)\rvert^2=\frac{(1-\lvert a\rvert^2)(1-\lvert z\rvert^2)}{\lvert 1-\bar a z\rvert^2}.$$</div></div></div>
+      <div class="s"><div class="si">4</div><div class="sc">
+        <p><b>Test a candidate.</b> Try <span class="mono">$\lambda_0(z)=\dfrac{1}{1-\lvert z\rvert^2}$</span> in the rule from step&nbsp;2. Substituting the two facts and cancelling:</p>
+        <div class="math">$$\lambda_0(\varphi_a(z))\,\lvert\varphi_a'(z)\rvert=\frac{\lvert\varphi_a'(z)\rvert}{1-\lvert\varphi_a(z)\rvert^2}=\frac{\dfrac{1-\lvert a\rvert^2}{\lvert 1-\bar a z\rvert^2}}{\dfrac{(1-\lvert a\rvert^2)(1-\lvert z\rvert^2)}{\lvert 1-\bar a z\rvert^2}}=\frac{1}{1-\lvert z\rvert^2}=\lambda_0(z).$$</div>
+        <p>It passes. So the length element <span class="mono">$\dfrac{\lvert dz\rvert}{1-\lvert z\rvert^2}$</span> is <strong>invariant</strong>: it assigns a curve the same length no matter which <span class="mono">$\varphi_a$</span> you view it through. ("Preserved" / "invariant" just means unchanged when you apply a symmetry map.) That is precisely the behaviour an isometry-respecting metric needs.</p></div></div>
+      <div class="s"><div class="si">5</div><div class="sc">
+        <p><b>Why it is the only shape, up to one constant.</b> Suppose <span class="mono">$\lambda$</span> is <em>any</em> function obeying the rule. Then <span class="mono">$\lambda$</span> and <span class="mono">$\lambda_0$</span> transform identically, so their ratio <span class="mono">$f=\lambda/\lambda_0$</span> is unchanged by every <span class="mono">$\varphi_a$</span>: <span class="mono">$f(\varphi_a(z))=f(z)$</span>. But the <span class="mono">$\varphi_a$</span> reach every point (homogeneity: some <span class="mono">$\varphi_a$</span> slides any point to any other), so a function that is constant along them is constant <em>everywhere</em>. Hence <span class="mono">$f\equiv k$</span> and <span class="mono">$\lambda=k\,\lambda_0=\dfrac{k}{1-\lvert z\rvert^2}$</span>. Symmetry has fixed the shape; only the number <span class="mono">$k$</span> is left.</p></div></div>
+      <div class="s"><div class="si">6</div><div class="sc">
+        <p><b>The constant, from curvature.</b> Re-running the same argument on the disk of radius <span class="mono">$1/\sqrt c$</span> (its defining inequality <span class="mono">$c\lVert x\rVert^2<1$</span> simply replaces <span class="mono">$\lvert z\rvert^2<1$</span>) gives <span class="mono">$\lambda=\dfrac{k}{1-c\lVert x\rVert^2}$</span>. Feed this to the toolbox. Differentiating <span class="mono">$\ln\lambda=\ln k-\ln(1-c\lVert x\rVert^2)$</span>, the constant <span class="mono">$\ln k$</span> dies, leaving <span class="mono">$\partial_i\ln\lambda=\dfrac{2c\,x_i}{1-c\lVert x\rVert^2}$</span>; summing the second derivatives,</p>
+        <div class="math">$$\Delta\ln\lambda=\frac{4c}{(1-c\lVert x\rVert^2)^2},\qquad \lambda^2=\frac{k^2}{(1-c\lVert x\rVert^2)^2},\qquad K=-\frac{1}{\lambda^2}\Delta\ln\lambda=-\frac{4c}{k^2}.$$</div></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc">
+        <p>We built the space to have curvature <span class="mono">$-c$</span>. Setting <span class="mono">$-4c/k^2=-c$</span> gives <span class="mono">$k^2=4$</span>, so <span class="mono">$k=2$</span> (positive, since a length scale is positive). <em>That is the entire reason for the 2</em>: it is the unique constant that makes the curvature come out to exactly <span class="mono">$-c$</span>. And <span class="mono">$\lambda$</span> grows without bound as <span class="mono">$c\lVert x\rVert^2\to1$</span> (the stretch becomes infinite at the rim), confirming the boundary radius <span class="mono">$1/\sqrt c$</span>.</p>
+        <div class="math">$$\boxed{\;\lambda_x=\dfrac{2}{1-c\lVert x\rVert^2}\;}$$</div></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <h4>The flat limit, shown with limits</h4>
+    <p>Sending the curvature to zero should turn this curved geometry back into ordinary flat geometry. Two limits make that exact. First the factor itself — for any fixed point <span class="mono">$x$</span>,</p>
+    <div class="eqn">$$\lim_{c\to0}\lambda_x=\lim_{c\to0}\frac{2}{1-c\lVert x\rVert^2}=\frac{2}{1-0}=2,$$</div>
+    <p>so <span class="mono">$\lambda$</span> stops varying from point to point and freezes at the constant <span class="mono">$2$</span>. Second the curvature: a constant <span class="mono">$\lambda$</span> has <span class="mono">$\ln\lambda$</span> constant, so <span class="mono">$\Delta\ln\lambda=0$</span> and <span class="mono">$K=0$</span> by the toolbox — flat. A constant conformal factor is just the Euclidean plane with its ruler globally rescaled by <span class="mono">$2$</span>, which has zero curvature. (Distances confirm it: the distance law derived in Part&nbsp;IV is <span class="mono">$d_c(0,x)=\tfrac{2}{\sqrt c}\tanh^{-1}(\sqrt c\lVert x\rVert)$</span>, and since <span class="mono">$\tanh^{-1}t=t+\tfrac{t^3}{3}+\cdots$</span>, the leading term gives <span class="mono">$d_c(0,x)\to 2\lVert x\rVert$</span> as <span class="mono">$c\to0$</span> — Euclidean distance, scaled by the same <span class="mono">$2$</span>.)</p>
+  </div></div>
+  <div class="wrap"><div class="col">
+    <p>We now have a concrete place to compute — the Poincaré ball — and its exact ruler, <span class="mono">$\lambda_x=2/(1-c\lVert x\rVert^2)$</span>. That is the whole inheritance from history; everything ahead is built on this one metric.</p>
+  </div></div>
+</section>
+
+<!-- ================= III · NETWORKS ================= -->
+<section class="part" id="networks">
+  <div class="partbar"><span class="pl">Part III</span><span class="pt">Networks &mdash; the Euclidean machine, and the one thing that changes</span></div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">08</span> What a network is made of</div>
+    <h2>A neural network is five Euclidean operations</h2>
+    <p>A neural network is a function on <strong>vectors</strong> (points in <span class="mono">$\mathbb{R}^n$</span>), built from a small fixed set of operations and trained by sliding its weights downhill against a loss. There are five operations. It <em>translates</em> a vector by adding a bias, <span class="mono">$x+b$</span>; <em>mixes</em> coordinates with a weight matrix, <span class="mono">$Wx$</span>; bends each coordinate through a <em>nonlinearity</em> <span class="mono">$\phi$</span> (such as <span class="mono">$\tanh$</span>); <em>compares</em> two vectors by distance <span class="mono">$\lVert x-y\rVert$</span> or dot product <span class="mono">$\langle x,y\rangle$</span>; and <em>classifies</em> by which side of a flat hyperplane a point lands on. A layer chains the first three, <span class="mono">$x\mapsto\phi(Wx+b)$</span>; a classifier uses the last two.</p>
+    <p>The point to notice: <strong>every one of these is defined with flat geometry.</strong> Addition is ordinary vector addition. "Close" means small <span class="mono">$\lVert x-y\rVert$</span>, the straight-line distance. A decision boundary is a flat plane. The network's entire sense of space is the Euclidean dot product — and that single assumption is the one thing a hyperbolic network discards.</p>
+  </div></div>
+  <div class="corr">
+    <table>
+      <tr><th>Operation</th><th>Euclidean (flat)</th><th>Hyperbolic (Poincar&eacute; ball)</th><th>derived</th></tr>
+      <tr><td>translate by bias</td><td class="fl">$x+b$</td><td class="hy">$x\oplus_c b$</td><td class="ref">&sect;12</td></tr>
+      <tr><td>apply weight matrix</td><td class="fl">$Wx$</td><td class="hy">$W\otimes_c x$</td><td class="ref">&sect;15</td></tr>
+      <tr><td>nonlinearity</td><td class="fl">$\phi(x)$</td><td class="hy">$\exp_0^c\!\big(\phi(\log_0^c x)\big)$</td><td class="ref">&sect;14</td></tr>
+      <tr><td>distance / compare</td><td class="fl">$\lVert x-y\rVert$</td><td class="hy">$d_c(x,y)$</td><td class="ref">&sect;13</td></tr>
+      <tr><td>classify</td><td class="fl">flat hyperplane</td><td class="hy">hypergyroplane (MLR)</td><td class="ref">&sect;20</td></tr>
+    </table>
+  </div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">09</span> Where the two architectures differ</div>
+    <h2>The same five operations, rebuilt on the ball</h2>
+    <p>That table <em>is</em> the entire difference between a Euclidean and a hyperbolic network. The architecture is identical — the same layers, the same weights, the same gradient-descent training. What changes is that each operation is replaced by a version respecting the curved metric of the Poincar&eacute; ball instead of the flat dot product. The right-hand column is exactly what Part&nbsp;IV derives, line by line; it is the machinery the rest of the document builds.</p>
+    <p>Why pay that price? Because of the room argument from Part&nbsp;I, which a flat network cannot escape. A Euclidean network can only place its points and draw its boundaries in flat space, where the area within radius <span class="mono">$r$</span> grows polynomially — far too slowly to hold a branching tree, so the tree is crushed: high distortion, and at depth the points collide within floating-point precision. The ball's area grows exponentially, matching the tree. Slide the curvature and watch the gap between the two open up:</p>
+  </div></div>
+  <div class="lab" id="lab-vol">
+    <div class="lab-head">
+      <div class="t"><b>Instrument 07</b> — room available vs radius</div>
+      <div class="hint">drag the curvature slider</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="volCanvas" width="640" height="420" class="sq" style="width:100%;max-width:520px;height:auto;cursor:default"></canvas></div>
+      <div class="lab-side">
+        <div class="ctrl">
+          <label>curvature scale <span class="val" id="vol-cval">c = 1.00</span></label>
+          <input type="range" id="vol-c" min="0.2" max="3" step="0.05" value="1">
+        </div>
+        <div class="ctrl">
+          <label>vertical scale</label>
+          <div class="toggle" id="vol-toggle">
+            <button data-v="lin" class="on">linear</button>
+            <button data-v="log">log</button>
+          </div>
+        </div>
+        <div class="readout">
+          <div class="row"><span class="k">at r = 3</span><span class="k"></span></div>
+          <div class="row"><span class="k">euclidean</span><span class="v eucl" id="vol-e">18.8</span></div>
+          <div class="row"><span class="k">hyperbolic</span><span class="v hyp" id="vol-h">63.0</span></div>
+          <div class="row"><span class="k">ratio</span><span class="v" id="vol-r">3.3×</span></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--eucl)"></i> Euclidean circumference 2πr</span>
+          <span><i style="background:var(--hyp)"></i> Hyperbolic 2π·sinh(√c·r)/√c</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>So the gain is not a new <em>kind</em> of layer — it is the same five operations acting in a space with room to spare, where the curved distance (operation&nbsp;4) and curved boundary (operation&nbsp;5) finally mean what we want them to. The price is that all five must be re-derived for the ball. That is Part&nbsp;IV.</p>
+
+    <div class="eyebrow"><span class="n">10</span> The model we build</div>
+    <h2>A sentence-pair classifier</h2>
+    <p>To keep the target concrete, the model assembled in Part&nbsp;V (from <span class="name">Ganea, B&eacute;cigneul &amp; Hofmann, 2018</span>) is a <strong>sentence-pair classifier</strong>. Two sentences enter as sequences of word vectors. Each is read by a recurrent encoder whose hidden state is a point on the ball — operations&nbsp;1&ndash;3 in their curved form — producing one point per sentence. The two points, plus the hyperbolic distance between them (operation&nbsp;4), are combined and handed to a hyperbolic classifier (operation&nbsp;5):</p>
+    <div class="eqn" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);line-height:2">
+      sentence&nbsp;1 &rarr; hyperbolic encoder &rarr; point&nbsp;s&#8321;<br>
+      sentence&nbsp;2 &rarr; hyperbolic encoder &rarr; point&nbsp;s&#8322;<br>
+      (s&#8321;, s&#8322;, distance&nbsp;d(s&#8321;,s&#8322;)) &rarr; combine &rarr; hyperbolic classifier &rarr; label
+    </div>
+    <p>Every arrow uses one of the curved operations from the table. Part&nbsp;IV derives them; Part&nbsp;V wires them together.</p>
+  </div></div>
+</section>
+
+<!-- ================= IV · GEOMETRY ================= -->
+<section class="part" id="geometry">
+  <div class="partbar"><span class="pl">Part IV</span><span class="pt">The Geometry &mdash; every operation, derived</span></div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">11</span> The ball and its ruler</div>
+    <h2>Reading the metric we inherited</h2>
+    <p>From Part II we carry forward one object: the metric <span class="mono">$g_x=\lambda_x^2\,\langle\cdot,\cdot\rangle$</span> with conformal factor <span class="mono">$\lambda_x=2/(1-c\lVert x\rVert^2)$</span>, where <span class="mono">$\langle\cdot,\cdot\rangle$</span> is the plain dot product. Read it as: at the point <span class="mono">$x$</span>, a tiny step is <span class="mono">$\lambda_x$</span> times longer than it looks. The picture below makes <span class="mono">$\lambda$</span> tangible — drag the point and watch a fixed Euclidean ruler's <em>felt</em> length swell as it nears the rim.</p>
+  </div></div>
+  <div class="lab" id="lab-lens">
+    <div class="lab-head">
+      <div class="t"><b>Instrument 01</b> — conformal stretch</div>
+      <div class="hint">drag the point ✦</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="lensCanvas" width="700" height="700" style="width:360px;height:360px"></canvas></div>
+      <div class="lab-side">
+        <div class="readout">
+          <div class="row"><span class="k">‖x‖ (euclid)</span><span class="v" id="lens-norm">0.00</span></div>
+          <div class="row"><span class="k">λ conformal</span><span class="v hyp" id="lens-lam">2.00</span></div>
+          <div class="row"><span class="k">flat ruler</span><span class="v eucl">0.18</span></div>
+          <div class="row"><span class="k">felt length</span><span class="v hyp" id="lens-felt">0.36</span></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--eucl)"></i> a ruler of fixed Euclidean length</span>
+          <span><i style="background:var(--hyp)"></i> how long it <em>feels</em> in the metric</span>
+        </div>
+        <div class="note">The grid is drawn at equal <em>hyperbolic</em> spacing. It bunches up near the rim because that's where space gets cheap to the eye but expensive to traverse.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>Two consequences of "the edge is infinitely stretched" will drive everything: <em>adding</em> points cannot be ordinary vector addition (the sum would shoot out of the disk), and <em>distance</em> is not the straight-line gap. We tackle addition first, because distance is built from it.</p>
+
+    <div class="eyebrow"><span class="n">12</span> Adding points</div>
+    <h2>Möbius addition</h2>
+    <p>To "translate" a point <span class="mono">$v$</span> by a point <span class="mono">$u$</span> while staying on the ball, ordinary <span class="mono">$u+v$</span> will not do. The correct operation is <strong>Möbius addition</strong>, written <span class="mono">$\oplus$</span>. First, the term it belongs to:</p>
+  </div></div>
+  <div class="defn">
+    <div class="term">Gyrovector <span class="pron">addition that respects the curve</span></div>
+    <p>A <strong>gyrovector space</strong> is the curved-space counterpart of an ordinary vector space. Möbius addition <span class="mono">$\oplus$</span> plays the role on the ball that plain vector addition <span class="mono">$+$</span> plays in flat space — it is how you translate one point by another without leaving the disk. The prefix <em>gyro</em> warns that <span class="mono">$\oplus$</span> is slightly twisted: it is not quite commutative or associative, and the leftover twist is a built-in rotation called a <em>gyration</em>. Near the centre the twist vanishes and <span class="mono">$\oplus$</span> becomes ordinary <span class="mono">$+$</span>.</p>
+  </div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — Möbius addition</span><span class="src">it is the disk's own translation</span></div>
+      <div class="target">$$u\oplus_c v=\frac{(1+2c\langle u,v\rangle+c\lVert v\rVert^2)\,u+(1-c\lVert u\rVert^2)\,v}{1+2c\langle u,v\rangle+c^2\lVert u\rVert^2\lVert v\rVert^2}$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p>In the unit disk seen as complex numbers, the map that slides the disk onto itself, sending the origin to <span class="mono">$a$</span>, is the simplest Möbius transformation. <em>Define</em> addition to be that translation:</p>
+        <div class="math">$$a\oplus b=\frac{a+b}{1+\bar a\,b}.$$</div></div></div>
+      <div class="s"><div class="si">2</div><div class="sc"><p>Make it real-valued: multiply top and bottom by the conjugate <span class="mono">$1+a\bar b$</span>. The denominator becomes <span class="mono">$\lvert 1+\bar a b\rvert^2=1+2\langle a,b\rangle+\lVert a\rVert^2\lVert b\rVert^2$</span> (using <span class="mono">$2\langle a,b\rangle=\bar a b+a\bar b$</span>).</p></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>Expanding the numerator and using the identity <span class="mono">$a^2\bar b=2\langle a,b\rangle a-\lVert a\rVert^2 b$</span> turns it into exactly the vector form (at <span class="mono">$c=1$</span>). General <span class="mono">$c$</span> follows by the rescaling <span class="mono">$x\mapsto\sqrt c\,x$</span>, which inserts the <span class="mono">$c$</span>'s shown in the target.</p>
+        <span class="limit">For small norms every correction term vanishes and u ⊕ v → u + v — the flat behaviour returns near the centre.</span></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>Drag <span style="color:var(--hyp)">u</span> and <span style="color:var(--hyp)">v</span> below. The cyan dot is the Möbius sum; the amber dot is the plain Euclidean sum. They agree near the middle and separate near the rim, where the curvature is strong.</p>
+  </div></div>
+  <div class="lab" id="lab-mob">
+    <div class="lab-head">
+      <div class="t"><b>Instrument 02</b> — möbius vs euclidean sum</div>
+      <div class="hint">drag u and v ✦</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="mobCanvas" width="700" height="700" style="width:360px;height:360px"></canvas></div>
+      <div class="lab-side">
+        <div class="readout">
+          <div class="row"><span class="k">u</span><span class="v" id="mob-u">(0.01, 0.00)</span></div>
+          <div class="row"><span class="k">v</span><span class="v" id="mob-v">(0.00, 0.02)</span></div>
+          <div class="row"><span class="k">u ⊕ v</span><span class="v hyp" id="mob-sum">(0.010, 0.020)</span></div>
+          <div class="row"><span class="k">u + v</span><span class="v eucl" id="mob-eu">(0.010, 0.020)</span></div>
+          <div class="row"><span class="k">gap</span><span class="v" id="mob-gap">0.0000</span></div>
+        </div>
+        <div class="legend">
+          <span><span class="dotmark" style="border-color:var(--hyp)"></span> u, v &nbsp;·&nbsp; draggable handles</span>
+          <span><span class="dotmark" style="border-color:var(--hyp);background:var(--hyp)"></span> u ⊕<sub>c</sub> v (true)</span>
+          <span><span class="dotmark" style="border-color:var(--eucl);background:var(--eucl)"></span> u + v (flat)</span>
+        </div>
+        <div class="note">The worked example from the doc — <span class="mono">u=(.01,0), v=(0,.02)</span> — gives a gap of order <span class="mono">10⁻⁴</span>. That's the local Euclidean behaviour you're seeing.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">13</span> Measuring distance</div>
+    <h2>How far apart are two points?</h2>
+    <p>Distance is "length of the shortest path," and length is the metric integrated along that path. For the special case of a path heading straight out from the centre this is a one-dimensional integral we can do by hand — but it uses the hyperbolic functions, so we define those from scratch first.</p>
+  </div></div>
+  <div class="toolbox">
+    <div class="toolbox-head"><span class="ic">⊞</span><span class="ti">Toolbox · the three hyperbolic functions</span><span class="tn">A</span></div>
+    <div class="toolbox-body">
+      <p class="fact">These are the hyperbolic analogues of sine and cosine, built directly from the exponential — no triangles needed:</p>
+      <div class="math">$$\cosh t=\frac{e^{t}+e^{-t}}{2},\quad \sinh t=\frac{e^{t}-e^{-t}}{2},\quad \tanh t=\frac{\sinh t}{\cosh t}.$$</div>
+      <p>One identity earns its keep repeatedly: <span class="mono">$\cosh^2 t-\sinh^2 t=1$</span>. Proof: expand the squares — <span class="mono">$\frac{(e^t+e^{-t})^2-(e^t-e^{-t})^2}{4}=\frac{4}{4}=1$</span>. Dividing it by <span class="mono">$\cosh^2 t$</span> gives the form we need below, <span class="mono">$1-\tanh^2 t=1/\cosh^2 t$</span>.</p>
+    </div>
+  </div>
+  <div class="toolbox">
+    <div class="toolbox-head"><span class="ic">⊞</span><span class="ti">Toolbox · the inverse tanh, and the radial distance</span><span class="tn">B</span></div>
+    <div class="toolbox-body">
+      <p class="fact">The inverse of <span class="mono">$\tanh$</span> has a logarithm form, <span class="mono">$\tanh^{-1}z=\tfrac12\ln\frac{1+z}{1-z}$</span> (solve <span class="mono">$z=\tanh t$</span> for <span class="mono">$t$</span>), and differentiating it gives <span class="mono">$\frac{d}{dz}\tanh^{-1}z=\frac{1}{1-z^2}$</span>.</p>
+      <p class="fact">So the distance straight out from the centre to a point <span class="mono">$z$</span> is the metric integrated radially:</p>
+      <div class="math">$$d(0,z)=\int_0^{\lVert z\rVert}\frac{2}{1-t^2}\,dt=2\tanh^{-1}\lVert z\rVert.$$</div>
+      <p class="prove">The integrand is the conformal factor <span class="mono">$\lambda_t$</span> at <span class="mono">$c=1$</span>; the radial line is the shortest path by symmetry; and <span class="mono">$2\tanh^{-1}$</span> is its antiderivative by the derivative just stated. The shaded area in the figure below <em>is</em> this distance — slide the radius toward the edge and watch it run to infinity.</p>
+    </div>
+  </div>
+  <div class="lab" id="lab-int">
+    <div class="lab-head">
+      <div class="t"><b>Instrument</b> — the distance integral, live</div>
+      <div class="hint">drag r ↔ · or the slider</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="intCanvas" width="560" height="420"></canvas></div>
+      <div class="lab-side">
+        <div class="ctrl">
+          <label>curvature <span class="val" id="int-cval">c = 1.00</span></label>
+          <input type="range" id="int-c" min="0.3" max="3" step="0.05" value="1">
+        </div>
+        <div class="readout">
+          <div class="row"><span class="k">radius r</span><span class="v" id="int-r">0.60</span></div>
+          <div class="row"><span class="k">√c · r</span><span class="v" id="int-sr">0.60</span></div>
+          <div class="row"><span class="k">integrand λ(r)</span><span class="v eucl" id="int-f">3.12</span></div>
+          <div class="row"><span class="k">∫ = distance</span><span class="v hyp" id="int-d">1.39</span></div>
+        </div>
+        <div class="note">The shaded cyan area <em>is</em> the geodesic distance from the origin out to radius r. Slide r toward the rim at <span class="mono">1/√c</span> and the integrand spikes — the area, and the distance, diverge.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>For two arbitrary points we use a trick we have already earned: Möbius addition by <span class="mono">$-u$</span> is one of the isometries the metric was built to respect, and it slides <span class="mono">$u$</span> to the centre. (Quick check: <span class="mono">$-u\oplus u=0$</span>, since both coefficients in the formula become <span class="mono">$1-\lVert u\rVert^2$</span> and the numerator is <span class="mono">$(1-\lVert u\rVert^2)(-u+u)=0$</span>.) Because it preserves distance, the gap between <span class="mono">$u$</span> and <span class="mono">$v$</span> equals the gap between the centre and the slid image of <span class="mono">$v$</span>:</p>
+    <div class="eqn">$$d_c(u,v)=d_c\big(0,\,-u\oplus_c v\big)=\frac{2}{\sqrt c}\tanh^{-1}\!\big(\sqrt c\,\lVert -u\oplus_c v\rVert\big).$$</div>
+    <p>That is the distance the model actually computes. The paper also records it in a closed two-point form that hides the Möbius addition — equation (4). It is worth deriving in full, because the cancellation that makes it clean is instructive.</p>
+  </div></div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — the closed distance, equation (4)</span><span class="src">𝔻ⁿ, c = 1</span></div>
+      <div class="target">$$d_{\mathbb{D}}(x,y)=\cosh^{-1}\!\left(1+2\,\frac{\lVert x-y\rVert^2}{(1-\lVert x\rVert^2)(1-\lVert y\rVert^2)}\right)$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p>Start from what we just proved, <span class="mono">$d_{\mathbb{D}}(x,y)=2\tanh^{-1}\lVert -x\oplus y\rVert$</span>, and write <span class="mono">$a=\lVert -x\oplus y\rVert$</span>. We need <span class="mono">$a$</span> in terms of <span class="mono">$x,y$</span>.</p></div></div>
+      <div class="s"><div class="si">2</div><div class="sc"><p>Squaring the Möbius formula and simplifying (with denominator <span class="mono">$D=1+2\langle u,v\rangle+\lVert u\rVert^2\lVert v\rVert^2$</span>) gives two clean identities for any <span class="mono">$u,v$</span>; the second's numerator <span class="mono">$1-\lVert u\rVert^2-\lVert v\rVert^2+\lVert u\rVert^2\lVert v\rVert^2$</span> factors perfectly:</p>
+        <div class="math">$$\lVert u\oplus v\rVert^2=\frac{\lVert u\rVert^2+2\langle u,v\rangle+\lVert v\rVert^2}{D},\qquad 1-\lVert u\oplus v\rVert^2=\frac{(1-\lVert u\rVert^2)(1-\lVert v\rVert^2)}{D}.$$</div></div></div>
+      <div class="s"><div class="si">3</div><div class="sc"><p>Put <span class="mono">$u=-x,\ v=y$</span>. Then <span class="mono">$\langle u,v\rangle=-\langle x,y\rangle$</span>, so the first numerator becomes <span class="mono">$\lVert x\rVert^2-2\langle x,y\rangle+\lVert y\rVert^2=\lVert x-y\rVert^2$</span>, and both identities share the same <span class="mono">$D$</span>. Dividing one by the other, <span class="mono">$D$</span> cancels:</p>
+        <div class="math">$$\frac{a^2}{1-a^2}=\frac{\lVert x-y\rVert^2}{(1-\lVert x\rVert^2)(1-\lVert y\rVert^2)}.$$</div></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>Finally convert the <span class="mono">$\tanh$</span> form to a <span class="mono">$\cosh$</span> form. With <span class="mono">$d=2t$</span> and <span class="mono">$\tanh t=a$</span>, the double-angle identity <span class="mono">$\cosh 2t=\frac{1+\tanh^2 t}{1-\tanh^2 t}=1+\frac{2a^2}{1-a^2}$</span> (proved from Toolbox A) gives</p>
+        <div class="math">$$\cosh d=1+2\,\frac{\lVert x-y\rVert^2}{(1-\lVert x\rVert^2)(1-\lVert y\rVert^2)}\;\Rightarrow\; d=\cosh^{-1}(\cdots).$$</div>
+        <span class="limit">As c → 0, cosh⁻¹(1+ε) ≈ √(2ε), so d → 2‖x−y‖ — the Euclidean distance, up to the constant λ₀ = 2.</span></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>Drag the two points: the cyan geodesic (the true shortest path, an arc bowing toward the centre) and its length behave nothing like the straight amber chord once the points near the rim.</p>
+  </div></div>
+  <div class="lab" id="lab-dist">
+    <div class="lab-head">
+      <div class="t"><b>Instrument 03</b> — geodesic &amp; distance</div>
+      <div class="hint">drag either point ✦</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="distCanvas" width="700" height="700" style="width:360px;height:360px"></canvas></div>
+      <div class="lab-side">
+        <div class="readout">
+          <div class="row"><span class="k">‖u−v‖ chord</span><span class="v eucl" id="dist-chord">0.00</span></div>
+          <div class="row"><span class="k">dₐ(u,v) hyper</span><span class="v hyp" id="dist-hyp">0.00</span></div>
+          <div class="row"><span class="k">dₐ(u,v)²</span><span class="v hyp" id="dist-sq">0.00</span></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--eucl)"></i> Euclidean chord</span>
+          <span><i style="background:var(--hyp)"></i> hyperbolic geodesic</span>
+        </div>
+        <div class="note">Drag a point toward the boundary: the chord changes by a little, the geodesic length runs away. The rim is infinitely distant.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>The verifier confirms the two forms agree to every decimal as you drag, and previews the angle result we reach shortly.</p>
+  </div></div>
+  <div class="lab" id="lab-verify">
+    <div class="lab-head">
+      <div class="t"><b>Instrument</b> — the derivation, checked live</div>
+      <div class="hint">drag x and y ✦</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="verCanvas" width="700" height="700" style="width:340px;height:340px"></canvas></div>
+      <div class="lab-side">
+        <div class="readout">
+          <div class="row"><span class="k">2·tanh⁻¹‖−x⊕y‖</span><span class="v hyp" id="ver-t">—</span></div>
+          <div class="row"><span class="k">cosh⁻¹(Eq 4)</span><span class="v hyp" id="ver-c">—</span></div>
+          <div class="row"><span class="k">match</span><span class="v" id="ver-m">—</span></div>
+          <div class="row"><span class="k">∠ metric</span><span class="v eucl" id="ver-am">—</span></div>
+          <div class="row"><span class="k">∠ euclid</span><span class="v eucl" id="ver-ae">—</span></div>
+        </div>
+        <div class="note">The two distance forms (cyan) track each other to every decimal as you drag — equation (4) <em>is</em> the radial integral, rewritten. The two angle readouts (amber) are equal because λ cancels — equation (5).</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">14</span> Crossing between flat and curved</div>
+    <h2>The exponential and logarithmic maps</h2>
+    <p>Nonlinearities and gradients are written for flat space. To use them we need a faithful bridge between the curved ball and the flat tangent space at the origin. The <strong>exponential map</strong> fires a tangent vector out along a geodesic into the ball; the <strong>logarithmic map</strong> is its inverse, bringing a ball point back to a flat vector. Both are just the radial distance law from Toolbox B, solved for the endpoint.</p>
+  </div></div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — exp and log at the origin</span><span class="src">geodesic, solved for its end</span></div>
+      <div class="target">$$\exp_0^c(v)=\tanh(\sqrt c\lVert v\rVert)\frac{v}{\sqrt c\lVert v\rVert},\qquad \log_0^c(y)=\frac{1}{\sqrt c}\tanh^{-1}(\sqrt c\lVert y\rVert)\frac{y}{\lVert y\rVert}$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p>From Toolbox B, a geodesic of arclength <span class="mono">$s$</span> from the centre reaches radius <span class="mono">$\rho$</span> with <span class="mono">$s=\tfrac{2}{\sqrt c}\tanh^{-1}(\sqrt c\rho)$</span>, hence <span class="mono">$\rho=\tfrac{1}{\sqrt c}\tanh(\tfrac{\sqrt c\,s}{2})$</span>.</p></div></div>
+      <div class="s"><div class="si">2</div><div class="sc"><p>The arclength <span class="mono">$\exp_0$</span> travels is the Riemannian length of the tangent vector <span class="mono">$v$</span>, and at the origin <span class="mono">$\lambda_0=2$</span>, so <span class="mono">$s=2\lVert v\rVert$</span>. The half cancels the two.</p></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>Point the result in the direction <span class="mono">$v/\lVert v\rVert$</span>: <span class="mono">$\exp_0(v)=\tanh(\sqrt c\lVert v\rVert)\,v/(\sqrt c\lVert v\rVert)$</span>. The log map is its literal inverse. The <span class="mono">$\tanh$</span> is a squeeze: however long <span class="mono">$v$</span> is, its image stays inside the ball.</p>
+        <span class="limit">As c → 0, exp₀(v) → v and log₀(y) → y — tangent space and ball merge into one flat space.</span></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>Drag the amber tangent arrow past the boundary; the cyan image only ever <em>approaches</em> the rim.</p>
+  </div></div>
+  <div class="lab" id="lab-exp">
+    <div class="lab-head">
+      <div class="t"><b>Instrument 04</b> — exponential map · tanh squeeze</div>
+      <div class="hint">drag the arrow tip ✦</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="expCanvas" width="700" height="700" style="width:360px;height:360px" class="sq"></canvas></div>
+      <div class="lab-side">
+        <div class="readout">
+          <div class="row"><span class="k">‖v‖ tangent</span><span class="v eucl" id="exp-tan">0.40</span></div>
+          <div class="row"><span class="k">‖exp₀v‖ ball</span><span class="v hyp" id="exp-ball">0.38</span></div>
+          <div class="row"><span class="k">compression</span><span class="v" id="exp-comp">0.95×</span></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--eucl)"></i> tangent vector v (flat)</span>
+          <span><i style="background:var(--hyp)"></i> exp₀(v) on the ball</span>
+        </div>
+        <div class="note">Short vectors barely move — near the centre exp is almost the identity. Long vectors get crushed against the boundary. That saturation is what keeps every hidden state legal.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">15</span> Multiplying by a matrix</div>
+    <h2>Möbius matrix–vector product</h2>
+    <p>A weight matrix acts linearly — a flat-space operation. So we apply it the only sensible way: drop the point to the flat tangent space with <span class="mono">$\log_0$</span>, multiply there, and lift back with <span class="mono">$\exp_0$</span>. The closed form is pure substitution.</p>
+    <div class="eqn">$$M\otimes_c x:=\exp_0^c\!\big(M\,\log_0^c(x)\big)=\frac{1}{\sqrt c}\tanh\!\Big(\frac{\lVert Mx\rVert}{\lVert x\rVert}\tanh^{-1}(\sqrt c\lVert x\rVert)\Big)\frac{Mx}{\lVert Mx\rVert}.$$</div>
+    <p>The same recipe with the matrix replaced by an element-wise multiply handles the "gates" the GRU will need, so no separate derivation is required there. As <span class="mono">$c\to 0$</span> both <span class="mono">$\tanh$</span>'s linearise and <span class="mono">$M\otimes x\to Mx$</span>.</p>
+
+    <div class="eyebrow"><span class="n">16</span> Angles come for free</div>
+    <h2>Why hyperbolic angles are Euclidean angles</h2>
+    <p>One more fact closes the toolkit: the angle between two tangent vectors, measured with the curved metric, equals the ordinary angle. This is equation (5), and it is a one-line cancellation — but we first earn the cosine formula it uses.</p>
+  </div></div>
+  <div class="toolbox">
+    <div class="toolbox-head"><span class="ic">⊞</span><span class="ti">Toolbox · the cosine of an angle</span><span class="tn">C</span></div>
+    <div class="toolbox-body">
+      <p class="fact">For two nonzero vectors, <span class="mono">$\cos\theta=\dfrac{\langle u,v\rangle}{\lVert u\rVert\,\lVert v\rVert}$</span>.</p>
+      <p class="prove">Proof from the law of cosines, <span class="mono">$\lVert u-v\rVert^2=\lVert u\rVert^2+\lVert v\rVert^2-2\lVert u\rVert\lVert v\rVert\cos\theta$</span>. The dot product expands the same left side as <span class="mono">$\lVert u\rVert^2-2\langle u,v\rangle+\lVert v\rVert^2$</span>. Equate, cancel <span class="mono">$\lVert u\rVert^2+\lVert v\rVert^2$</span>, and solve.</p>
+    </div>
+  </div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — conformal angle, equation (5)</span><span class="src">the λ cancels</span></div>
+      <div class="target">$$\cos\angle(u,v)=\frac{g_x^{\mathbb{D}}(u,v)}{\sqrt{g_x^{\mathbb{D}}(u,u)}\,\sqrt{g_x^{\mathbb{D}}(v,v)}}=\frac{\langle u,v\rangle}{\lVert u\rVert\,\lVert v\rVert}$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p>The metric is the dot product times one positive number, <span class="mono">$g_x(u,v)=\lambda_x^2\langle u,v\rangle$</span>. Drop it into the cosine formula of Toolbox C.</p></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>Every term carries the same <span class="mono">$\lambda_x^2$</span>; each square root pulls out one <span class="mono">$\lambda_x$</span>, so the denominator is <span class="mono">$\lambda_x^2\lVert u\rVert\lVert v\rVert$</span>. The <span class="mono">$\lambda_x^2$</span> cancels top and bottom, leaving the bare Euclidean angle — identical at every point of the ball. This is exactly what "conformal" promised back in Part II.</p></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>That completes the toolkit: add (<span class="mono">$\oplus$</span>), multiply (<span class="mono">$\otimes$</span>), cross to flat space and back (<span class="mono">$\log_0,\exp_0$</span>), measure distance (<span class="mono">$d_c$</span>), and trust angles. Part&nbsp;V wires them into a network.</p>
+  </div></div>
+</section>
+
+<!-- ================= V · THE NETWORK ================= -->
+<section class="part" id="layers">
+  <div class="partbar"><span class="pl">Part V</span><span class="pt">The Network &mdash; assembling the layers</span></div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">17</span> The recurrent cell</div>
+    <h2>The hyperbolic RNN</h2>
+    <p>Recall the flat recurrent update, <span class="mono">$h_t=\phi(W h_{t-1}+U x_t+b)$</span>. We rebuild it by translating each piece into its curved twin from Part&nbsp;IV: matrix multiply becomes <span class="mono">$\otimes_c$</span>, addition becomes <span class="mono">$\oplus_c$</span>, and the nonlinearity is applied <em>through</em> the tangent space (log down, bend, exp back):</p>
+    <div class="eqn">$$\tilde h_t=(W\otimes_c h_{t-1})\oplus_c(U\otimes_c x_t)\oplus_c b,\qquad h_t=\exp_0^c\!\big(\phi(\log_0^c \tilde h_t)\big).$$</div>
+    <p>Nothing here is new — it is the flat cell with every operation swapped for the one we derived. The one-step data flow, exactly as the code runs it, reads left to right:</p>
+  </div></div>
+  <div class="t"><b>Instrument 05</b> — one hyperbolic RNN step</div>
+  <div class="wrap"><div class="col">
+    <div class="callout">A subtlety the paper stresses: a stack of hyperbolic matrix-products and nonlinearities <em>with no bias</em> would secretly collapse — the whole stack equals $\exp_0\!\circ f_k\circ\cdots\circ f_1\circ\log_0$, an ordinary Euclidean network wearing a log/exp disguise. What genuinely makes the model hyperbolic is the Möbius bias $\oplus_c b$ slipped between layers: it shifts the point along a geodesic and cannot be undone by that tangent-space trick. (Formally that bias is the parallel transport of a tangent vector to the point — eq.&nbsp;28 of the paper.)</div>
+  </div></div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">18</span> The gated cell</div>
+    <h2>The hyperbolic GRU</h2>
+    <p>The GRU adds two gates — an update gate <span class="mono">$z_t$</span> and a reset gate <span class="mono">$r_t$</span> — each a number in <span class="mono">$[0,1]$</span> per coordinate, computed by the same Möbius-affine-then-<span class="mono">$\log_0$</span>-then-<span class="mono">$\sigma$</span> pattern (<span class="mono">$\sigma$</span> is the logistic squashing function). The reset gate multiplies the old state element-wise (the gated Möbius product), feeding a candidate state <span class="mono">$\tilde h_t$</span>. The final update is a <em>hyperbolic interpolation</em> walking from the old state toward the candidate:</p>
+    <div class="eqn">$$h_t=h_{t-1}\oplus_c\big(z_t\odot_c(-h_{t-1}\oplus_c\tilde h_t)\big).$$</div>
+    <p>Read the right-hand side as: take the gyro-difference between where you are (<span class="mono">$h_{t-1}$</span>) and where you want to be (<span class="mono">$\tilde h_t$</span>), scale it by the gate, and Möbius-add it back — the curved version of the flat convex blend <span class="mono">$h_{t-1}+z(\tilde h-h_{t-1})$</span>.</p>
+
+    <div class="eyebrow"><span class="n">19</span> From sequences to a verdict</div>
+    <h2>Combining two sentences</h2>
+    <p>Each encoder runs its cell across a sentence and outputs the final hidden point — <span class="mono">$s_1$</span> for the first sentence, <span class="mono">$s_2$</span> for the second, both points on the ball. A feed-forward layer then fuses them, and crucially it is also handed their hyperbolic <em>distance</em> <span class="mono">$d_c(s_1,s_2)^2$</span> as an extra feature — the very quantity we derived in Part&nbsp;IV, now doing real work: "how far apart in meaning are these two sentences?" The fused vector is what the classifier sees.</p>
+
+    <div class="eyebrow"><span class="n">20</span> The curved classifier</div>
+    <h2>Hyperbolic multinomial logistic regression</h2>
+    <p>Flat logistic regression scores a point by its signed distance to a flat hyperplane. The curved version replaces the plane with a <em>hypergyroplane</em> — a surface anchored at a ball point <span class="mono">$p_k$</span> with a tangent normal direction <span class="mono">$a_k$</span> — and the score is the signed hyperbolic distance to it. That distance turns out to be an inverse-hyperbolic-sine.</p>
+  </div></div>
+  <div class="toolbox">
+    <div class="toolbox-head"><span class="ic">⊞</span><span class="ti">Toolbox · the inverse sinh</span><span class="tn">D</span></div>
+    <div class="toolbox-body">
+      <p class="fact"><span class="mono">$\sinh^{-1}z=\ln(z+\sqrt{z^2+1})$</span>, the inverse of <span class="mono">$\sinh$</span> from Toolbox A. We also use <span class="mono">$\sinh(2t)=2\sinh t\cosh t$</span>, immediate from the definitions.</p>
+    </div>
+  </div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — the hyperbolic MLR score, eq. (25)</span><span class="src">distance to a hypergyroplane</span></div>
+      <div class="target">$$\ell_k(x)=\frac{\lambda^c_{p_k}\lVert a_k\rVert}{\sqrt c}\,\sinh^{-1}\!\Big(\sqrt c\,\lambda^c_{v_k}\big\langle v_k,\tfrac{a_k}{\lVert a_k\rVert}\big\rangle\Big),\quad v_k=-p_k\oplus_c x$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p>Translate the anchor to the centre with the isometry from Part&nbsp;IV: set <span class="mono">$v=-p_k\oplus_c x$</span>. The hypergyroplane through <span class="mono">$p_k$</span> with normal <span class="mono">$a_k$</span> becomes the flat linear plane through the origin, <span class="mono">$\{w:\langle w,a_k\rangle=0\}$</span>.</p></div></div>
+      <div class="s"><div class="si">2</div><div class="sc"><p>Solve the symmetric case: put <span class="mono">$v=t\,\hat a$</span> on the normal axis. Its distance to that plane is the radial distance <span class="mono">$\tfrac{2}{\sqrt c}\tanh^{-1}(\sqrt c\,t)$</span>, and <span class="mono">$\sinh$</span> of it is, by Toolbox D, <span class="mono">$\sinh(\sqrt c\,d)=\dfrac{2\sqrt c\,t}{1-c t^2}=\sqrt c\,\lambda_v^c\,t$</span>.</p></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>Since <span class="mono">$t=\langle v,\hat a\rangle$</span> and rotating within the plane changes nothing, this holds for all <span class="mono">$v$</span>: the distance to the hyperplane is <span class="mono">$\tfrac{1}{\sqrt c}\sinh^{-1}(\sqrt c\,\lambda_v^c\langle v,\hat a\rangle)$</span>. The class logit is this <em>signed</em> distance times the <em>metric</em> length of the normal at the anchor, <span class="mono">$\sqrt{g^c_{p_k}(a_k,a_k)}=\lambda^c_{p_k}\lVert a_k\rVert$</span> — the curved echo of how flat MLR weights its distance-to-hyperplane by <span class="mono">$\lVert a_k\rVert$</span>.</p>
+        <span class="limit">As c → 0, λ → 2 and the whole logit collapses to 4⟨−pₖ + x, aₖ⟩ — the ordinary Euclidean softmax score (the 4 is (λ⁰)²).</span></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>Drag the anchor <span style="color:var(--hyp)">p</span> and swing the normal <span style="color:var(--eucl)">a</span>: the boundary curls with the space near the rim and straightens toward the centre, where it matches the flat line it replaces.</p>
+  </div></div>
+  <div class="lab" id="lab-mlr">
+    <div class="lab-head">
+      <div class="t"><b>Instrument 06</b> — hypergyroplane decision boundary</div>
+      <div class="hint">drag p · drag the arrowhead to aim a ✦</div>
+    </div>
+    <div class="lab-body">
+      <div class="lab-stage"><canvas id="mlrCanvas" width="560" height="560" style="width:360px;height:360px"></canvas></div>
+      <div class="lab-side">
+        <div class="ctrl">
+          <label>Compare to Euclidean boundary</label>
+          <div class="toggle" id="mlr-toggle">
+            <button data-v="off" class="on">hide</button>
+            <button data-v="on">show</button>
+          </div>
+        </div>
+        <div class="readout">
+          <div class="row"><span class="k">anchor p</span><span class="v hyp" id="mlr-p">(0.20, 0.00)</span></div>
+          <div class="row"><span class="k">‖p‖</span><span class="v" id="mlr-pn">0.20</span></div>
+          <div class="row"><span class="k">normal ∠a</span><span class="v eucl" id="mlr-a">90°</span></div>
+        </div>
+        <div class="legend">
+          <span><span class="dotmark" style="border-color:var(--hyp);background:var(--hyp)"></span> p — boundary anchor</span>
+          <span><i style="background:var(--eucl)"></i> a — tangent normal</span>
+          <span><i style="background:#fff"></i> hyperbolic boundary</span>
+          <span><i style="background:var(--eucl);opacity:.6"></i> euclidean boundary (dashed)</span>
+        </div>
+        <div class="note">Push p toward the rim: the boundary curls hard, hugging the geometry. At the centre it's nearly the straight Euclidean line — the two worlds agreeing again.</div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">21</span> Measuring error</div>
+    <h2>The loss</h2>
+    <p>The classifier's <span class="mono">$K$</span> scores <span class="mono">$\ell_k$</span> are exponentiated and normalised into class probabilities (the softmax of §20), and the training objective is ordinary <strong>cross-entropy</strong> — the standard penalty for putting low probability on the correct label:</p>
+    <div class="eqn">$$\mathcal{L}=-\frac1N\sum_{i=1}^N\log p\big(y=y_i\mid x_i\big).$$</div>
+    <p>There is no special "hyperbolic loss." The geometry has already done its work upstream: the squared hyperbolic distance <span class="mono">$d_c(s_1,s_2)^2$</span> entered as a <em>feature</em> of the combine layer (§19), so "how far apart in meaning are these sentences" is something the classifier reads, not something the loss bolts on afterward.</p>
+
+    <div class="eyebrow"><span class="n">22</span> Training on the ball</div>
+    <h2>Riemannian gradient descent</h2>
+    <p>Training nudges weights downhill — but a naïve Euclidean step on a ball point would be the wrong size and could leave the disk entirely. The fix is one line of the same metric: the proper (Riemannian) gradient is the flat gradient rescaled by the inverse metric factor, after which a step is taken along a geodesic with <span class="mono">$\exp_x$</span>.</p>
+  </div></div>
+  <div class="deriv">
+    <div class="deriv-head"><div class="tag"><span><b>Derivation</b> — the gradient rescaling</span><span class="src">one line from the metric</span></div>
+      <div class="target">$$\nabla_R f=\frac{1}{(\lambda_x^c)^2}\,\nabla_E f=\frac{(1-c\lVert x\rVert^2)^2}{4}\,\nabla_E f$$</div></div>
+    <div class="deriv-body">
+      <div class="s"><div class="si">1</div><div class="sc"><p>The Riemannian gradient is defined so that its metric inner product with any direction equals the directional derivative: <span class="mono">$g_x(\nabla_R f,w)=\langle\nabla_E f,w\rangle$</span> for all <span class="mono">$w$</span>.</p></div></div>
+      <div class="s qed"><div class="si">∎</div><div class="sc"><p>Substitute <span class="mono">$g_x=\lambda_x^2\langle\cdot,\cdot\rangle$</span>: then <span class="mono">$\lambda_x^2\langle\nabla_R f,w\rangle=\langle\nabla_E f,w\rangle$</span> for all <span class="mono">$w$</span>, so <span class="mono">$\nabla_R f=\nabla_E f/\lambda_x^2$</span>. That factor is precisely the <span class="mono">$1/(\lambda_x^c)^2$</span> from Part II, which shrinks steps to zero at the boundary — so a parameter can never escape the ball. The update is <span class="mono">$x_{t+1}=\exp_{x_t}^c(-\eta\,\nabla_R f)$</span>.</p></div></div>
+    </div>
+  </div>
+  <div class="wrap"><div class="col">
+    <p>In practice only the genuinely hyperbolic parameters — the word embeddings and the layer biases — are trained this way. The weight matrices live in flat tangent space and use a standard optimiser (Adam); back-propagation runs as usual, with the single Riemannian rescaling applied just to the hyperbolic parameters' gradients.</p>
+  </div></div>
+</section>
+
+<!-- ================= VI · SYNTHESIS ================= -->
+<section class="part" id="synthesis">
+  <div class="partbar"><span class="pl">Part VI</span><span class="pt">Synthesis &mdash; the whole machine</span></div>
+  <div class="wrap"><div class="col">
+    <div class="eyebrow"><span class="n">23</span> One pass, end to end</div>
+    <h2>Watch a single example flow through</h2>
+    <p>Every piece now exists and is derived. Trace one labelled sentence pair from input to loss, and the document folds shut on itself:</p>
+    <p><strong>1 · Embed.</strong> Each word becomes a vector and is placed on the ball with <span class="mono">$\exp_0$</span> (Part IV §14).</p>
+    <p><strong>2 · Encode.</strong> A hyperbolic RNN or GRU (§17–18) reads each sentence, its hidden state moving on the ball via <span class="mono">$\otimes_c$</span>, <span class="mono">$\oplus_c$</span>, and a tangent-space nonlinearity, emerging as a single point <span class="mono">$s_1$</span> or <span class="mono">$s_2$</span>.</p>
+    <p><strong>3 · Combine.</strong> A feed-forward layer fuses <span class="mono">$s_1,s_2$</span> with their hyperbolic distance <span class="mono">$d_c(s_1,s_2)^2$</span> (§13, §19) — the geometry of meaning entering as a feature.</p>
+    <p><strong>4 · Classify.</strong> Hyperbolic MLR (§20) scores the fused point against each class's curved boundary, giving probabilities.</p>
+    <p><strong>5 · Score and learn.</strong> Cross-entropy (§21) measures the error; Riemannian SGD (§22) pushes every weight — flat ones with ordinary steps, ball-bound ones along geodesics — a little downhill. Repeat.</p>
+    <div class="callout">Every operation in that trace reduces to the single metric of Part&nbsp;II, which itself follows from one changed axiom of Part&nbsp;I — the entire network rests on that chain.</div>
+
+    <div class="eyebrow"><span class="n">24</span> Why it was worth it</div>
+    <h2>The payoff, restated</h2>
+    <p>The reason for all this machinery was the exponential room of Part&nbsp;III: hierarchy embeds on the ball with far less distortion than in the same number of flat dimensions, because the space grows as fast as the data branches. Hyperbolic encoders place broad concepts near the centre and specific ones out toward the boundary — encoding the tree in the <em>radius</em> — which is exactly the structure the curved distance and curved classifier are built to read.</p>
+  </div></div>
+  <div style="padding:36px 0 24px"><p class="bigquote">Negate one axiom about parallel lines, and you are handed a curvature, a unit of length, a single metric — and a neural network that thinks in the shape of a tree. <b>Everything else is consequence.</b></p></div>
+  <div class="wrap"><div class="col">
+    <h3>Code map</h3>
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;line-height:2;color:var(--muted)">
+      <span class="codepath">util.py</span> — mob_add · poinc_dist_sq · exp_map_zero · log_map_zero · mob_mat_mul · lambda_x · riemannian_gradient_c<br>
+      <span class="codepath">rnn_impl.py</span> — HypRNN · HypGRU · forwards<br>
+      <span class="codepath">hyp_rnn.py</span> — HyperbolicRNNModel.forward · encode_sentence · hyperbolic MLR · compute_loss · RiemannianTrainer
+    </p>
+    <h3>Sources</h3>
+    <ul class="refs">
+      <li>Ganea, Bécigneul &amp; Hofmann. <em>Hyperbolic Neural Networks.</em> NeurIPS 2018 — every model equation here.</li>
+      <li>Nickel &amp; Kiela. <em>Poincaré Embeddings for Learning Hierarchical Representations.</em> NeurIPS 2017.</li>
+      <li>Bonnabel. <em>Stochastic Gradient Descent on Riemannian Manifolds.</em> IEEE TAC, 2013.</li>
+      <li>Ungar. <em>Analytic Hyperbolic Geometry and Special Relativity.</em> 2008 — the gyrovector formalism.</li>
+      <li>Euclid (c. 300 BCE); Saccheri (1733); Lambert (1766); Lobachevsky (1829); Bolyai (1832); Beltrami (1868); Poincaré (1882).</li>
+    </ul>
+  </div></div>
+</section>
+
+<footer class="bookfoot">
+  <div class="big">Inside the Ball</div>
+  from Euclid's fifth postulate to a working hyperbolic neural network<br>
+  <a href="#cover">return to the top &uarr;</a>
+</footer>
+
+<script>
+/* ============================================================
+   Shared Poincaré-ball math (2D, vectors as {x,y}) — c is the
+   absolute curvature scale; disks below render the unit ball (c=1).
+   ============================================================ */
+const EPS = 1e-12;
+const dot = (a,b)=>a.x*b.x+a.y*b.y;
+const n2  = a=>a.x*a.x+a.y*a.y;
+const nrm = a=>Math.hypot(a.x,a.y);
+const add = (a,b)=>({x:a.x+b.x,y:a.y+b.y});
+const sub = (a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const neg = a=>({x:-a.x,y:-a.y});
+const scl = (a,s)=>({x:a.x*s,y:a.y*s});
+const atanh = z=>0.5*Math.log((1+z)/(1-z));
+
+function mobAdd(u,v,c){
+  const uv=dot(u,v), u2=n2(u), v2=n2(v);
+  const c1=1+2*c*uv+c*v2;
+  const c2=1-c*u2;
+  const den=1+2*c*uv+c*c*u2*v2;
+  return {x:(c1*u.x+c2*v.x)/den, y:(c1*u.y+c2*v.y)/den};
+}
+function expZero(v,c){
+  const r=nrm(v); if(r<EPS) return {x:0,y:0};
+  const s=Math.sqrt(c);
+  const f=Math.tanh(s*r)/(s*r);
+  return scl(v,f);
+}
+function logZero(y,c){
+  const r=nrm(y); if(r<EPS) return {x:0,y:0};
+  const s=Math.sqrt(c);
+  const f=atanh(Math.min(s*r,1-1e-9))/(s*r);
+  return scl(y,f);
+}
+function poincDist(u,v,c){
+  const w=mobAdd(neg(u),v,c);
+  const s=Math.sqrt(c);
+  return (2/s)*atanh(Math.min(s*nrm(w),1-1e-9));
+}
+function lambda(x,c){ return 2/(1-c*n2(x)); }
+function projectIn(p,c,margin=0.999){
+  const r=nrm(p), max=margin/Math.sqrt(c);
+  if(r>max) return scl(p,max/r);
+  return p;
+}
+
+/* circle through 3 points → {cx,cy,r} or null if ~collinear */
+function circle3(a,b,d){
+  const A=2*(a.x*(b.y-d.y)+b.x*(d.y-a.y)+d.x*(a.y-b.y));
+  if(Math.abs(A)<1e-9) return null;
+  const a2=a.x*a.x+a.y*a.y, b2=b.x*b.x+b.y*b.y, d2=d.x*d.x+d.y*d.y;
+  const cx=(a2*(b.y-d.y)+b2*(d.y-a.y)+d2*(a.y-b.y))/A;
+  const cy=(a2*(d.x-b.x)+b2*(a.x-d.x)+d2*(b.x-a.x))/A;
+  return {cx,cy,r:Math.hypot(a.x-cx,a.y-cy)};
+}
+
+/* ---- generic draggable disk widget scaffold ---- */
+function makeDisk(canvas, opts){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const cx=W/2, cy=H/2;
+  const R=Math.min(W,H)*0.5 - 14;        // disk radius in px
+  const toPx = p=>({x:cx+p.x*R, y:cy-p.y*R});
+  const toModel = q=>({x:(q.x-cx)/R, y:-(q.y-cy)/R});
+  const dpr=window.devicePixelRatio||1;
+  return {ctx,W,H,cx,cy,R,toPx,toModel};
+}
+
+const HYP="#54e2c6", EUCL="#f4a259", BND="#7c77c4", INK="#e9e7f4", FAINT="#615d80";
+
+/* draw the boundary + a faint hyperbolic grid of geodesics */
+function drawBall(d, {grid=true}={}){
+  const {ctx,cx,cy,R}=d;
+  ctx.clearRect(0,0,d.W,d.H);
+  // soft interior glow
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  g.addColorStop(0,"rgba(84,226,198,0.06)");
+  g.addColorStop(0.7,"rgba(84,226,198,0.015)");
+  g.addColorStop(1,"rgba(10,10,19,0)");
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill();
+
+  if(grid){
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.clip();
+    ctx.strokeStyle="rgba(124,119,196,0.16)"; ctx.lineWidth=1;
+    // radial geodesics through origin (straight diameters)
+    for(let k=0;k<12;k++){
+      const a=k*Math.PI/6;
+      ctx.beginPath();
+      ctx.moveTo(cx-Math.cos(a)*R, cy-Math.sin(a)*R);
+      ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R);
+      ctx.stroke();
+    }
+    // concentric circles at equal HYPERBOLIC spacing (tanh)
+    for(let k=1;k<=6;k++){
+      const rr=Math.tanh(k*0.42); // crowds toward edge
+      ctx.beginPath(); ctx.arc(cx,cy,rr*R,0,7); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // boundary rim
+  ctx.lineWidth=2.2;
+  const rim=ctx.createLinearGradient(cx-R,cy-R,cx+R,cy+R);
+  rim.addColorStop(0,"#8b86d6"); rim.addColorStop(1,"#6f6ab0");
+  ctx.strokeStyle=rim; ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
+}
+
+/* draw a geodesic arc between model points p,q (unit disk, c=1) clipped to ball */
+function drawGeodesic(d,p,q,color,width=2.4){
+  const {ctx,cx,cy,R}=d;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.clip();
+  ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap="round";
+  // inversion of p through unit circle for 3rd point
+  const pn=n2(p);
+  let circ=null;
+  if(pn>1e-9){ const pinv=scl(p,1/pn); circ=circle3(p,q,pinv); }
+  if(!circ){
+    // straight diameter
+    const a=d.toPx(p), b=d.toPx(q);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  } else {
+    const C={x:cx+circ.cx*R, y:cy-circ.cy*R}, rr=circ.r*R;
+    ctx.beginPath(); ctx.arc(C.x,C.y,rr,0,7); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawHandle(d,p,{color=HYP,r=7,fill=false,label=null,ring=true}={}){
+  const {ctx}=d; const q=d.toPx(p);
+  ctx.save();
+  if(ring){ ctx.shadowColor=color; ctx.shadowBlur=10; }
+  ctx.beginPath(); ctx.arc(q.x,q.y,r,0,7);
+  if(fill){ ctx.fillStyle=color; ctx.fill(); }
+  else { ctx.fillStyle="#0a0a13"; ctx.fill(); ctx.lineWidth=2.4; ctx.strokeStyle=color; ctx.stroke(); }
+  ctx.shadowBlur=0;
+  if(label){ ctx.fillStyle=color; ctx.font="600 13px 'IBM Plex Mono'"; ctx.fillText(label,q.x+r+5,q.y-r-2); }
+  ctx.restore();
+}
+function drawArrow(d,from,to,color,width=2.2){
+  const {ctx}=d; const a=d.toPx(from), b=d.toPx(to);
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=width; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  const ang=Math.atan2(b.y-a.y,b.x-a.x), hl=9;
+  ctx.beginPath(); ctx.moveTo(b.x,b.y);
+  ctx.lineTo(b.x-hl*Math.cos(ang-0.4),b.y-hl*Math.sin(ang-0.4));
+  ctx.lineTo(b.x-hl*Math.cos(ang+0.4),b.y-hl*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+/* unified pointer-drag binding: handles=[{get,set,pick}] */
+function bindDrag(canvas,d,handles,redraw){
+  let active=null;
+  const pos=e=>{
+    const r=canvas.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+    const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    return d.toModel({x:x*(canvas.width/r.width), y:y*(canvas.height/r.height)});
+  };
+  const down=e=>{
+    const m=pos(e); let best=null,bd=1e9;
+    handles.forEach(h=>{
+      const hp=h.get(); const px=d.toPx(hp), mp=d.toPx(m);
+      const dd=Math.hypot(px.x-mp.x,px.y-mp.y);
+      if(dd<bd && dd<28){bd=dd;best=h;}
+    });
+    if(best){active=best; e.preventDefault();}
+  };
+  const move=e=>{ if(!active)return; active.set(pos(e)); redraw(); e.preventDefault(); };
+  const up=()=>active=null;
+  canvas.addEventListener('mousedown',down); canvas.addEventListener('touchstart',down,{passive:false});
+  window.addEventListener('mousemove',move); window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('mouseup',up); window.addEventListener('touchend',up);
+}
+
+const fmt=(n,p=2)=>n.toFixed(p);
+const vstr=p=>`(${p.x>=0?' ':''}${fmt(p.x)}, ${p.y>=0?' ':''}${fmt(p.y)})`;
+
+/* ===================== 01 · LENS ===================== */
+(function(){
+  const cv=document.getElementById('lensCanvas'); if(!cv)return;
+  const d=makeDisk(cv); const c=1;
+  let p={x:0.45,y:0.18};
+  const elN=document.getElementById('lens-norm'),elL=document.getElementById('lens-lam'),elF=document.getElementById('lens-felt');
+  function draw(){
+    drawBall(d,{grid:true});
+    const {ctx}=d;
+    // a fixed-euclidean-length ruler centred at p, length 0.18 along +x
+    const half=0.09; const len=lambda(p,c); // felt length ≈ λ·euclidLen for an infinitesimal segment scaled
+    const a={x:p.x-half,y:p.y}, b={x:p.x+half,y:p.y};
+    // amber ruler (euclidean extent)
+    const pa=d.toPx(a),pb=d.toPx(b);
+    ctx.strokeStyle=EUCL; ctx.lineWidth=3; ctx.lineCap="round";
+    ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.stroke();
+    // cyan "felt" bar above, length scaled by λ (clamped for display)
+    const felt=Math.min(0.18*len/2, 0.9);
+    const ca={x:p.x-felt/2,y:p.y+0.10}, cb={x:p.x+felt/2,y:p.y+0.10};
+    const qa=d.toPx(ca),qb=d.toPx(cb);
+    ctx.strokeStyle=HYP; ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(qa.x,qa.y);ctx.lineTo(qb.x,qb.y);ctx.stroke();
+    drawHandle(d,p,{color:HYP,fill:true,label:'x'});
+    elN.textContent=fmt(nrm(p));
+    elL.textContent=fmt(len);
+    elF.textContent=fmt(0.18*len/2);
+  }
+  bindDrag(cv,d,[{get:()=>p,set:m=>p=projectIn(m,c,0.97)}],draw);
+  draw();
+})();
+
+/* ===================== 02 · MÖBIUS ADD ===================== */
+(function(){
+  const cv=document.getElementById('mobCanvas'); if(!cv)return;
+  const d=makeDisk(cv); const c=1;
+  let u={x:0.30,y:-0.10}, v={x:-0.05,y:0.34};
+  const eU=document.getElementById('mob-u'),eV=document.getElementById('mob-v'),
+        eS=document.getElementById('mob-sum'),eE=document.getElementById('mob-eu'),eG=document.getElementById('mob-gap');
+  function draw(){
+    drawBall(d,{grid:true});
+    const {ctx}=d;
+    const s=mobAdd(u,v,c), e=projectIn(add(u,v),c,0.999);
+    // faint lines origin→u, origin→v
+    ctx.strokeStyle="rgba(84,226,198,0.25)"; ctx.lineWidth=1.4;
+    [u,v].forEach(pt=>{const a=d.toPx({x:0,y:0}),b=d.toPx(pt);
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();});
+    drawHandle(d,u,{color:HYP,label:'u'});
+    drawHandle(d,v,{color:HYP,label:'v'});
+    drawHandle(d,e,{color:EUCL,fill:true,r:6,ring:false});
+    drawHandle(d,s,{color:HYP,fill:true,r:7});
+    eU.textContent=vstr(u);eV.textContent=vstr(v);
+    eS.textContent=vstr(s);eE.textContent=vstr(add(u,v));
+    eG.textContent=fmt(nrm(sub(s,add(u,v))),4);
+  }
+  bindDrag(cv,d,[
+    {get:()=>u,set:m=>u=projectIn(m,c,0.95)},
+    {get:()=>v,set:m=>v=projectIn(m,c,0.95)}
+  ],draw);
+  draw();
+})();
+
+/* ===================== 03 · DISTANCE ===================== */
+(function(){
+  const cv=document.getElementById('distCanvas'); if(!cv)return;
+  const d=makeDisk(cv); const c=1;
+  let u={x:-0.35,y:-0.25}, v={x:0.5,y:0.3};
+  const eC=document.getElementById('dist-chord'),eH=document.getElementById('dist-hyp'),eS=document.getElementById('dist-sq');
+  function draw(){
+    drawBall(d,{grid:true});
+    const {ctx}=d;
+    // euclidean chord (amber dashed)
+    const a=d.toPx(u),b=d.toPx(v);
+    ctx.save();ctx.setLineDash([6,6]);ctx.strokeStyle=EUCL;ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();
+    // geodesic (cyan)
+    drawGeodesic(d,u,v,HYP,2.6);
+    drawHandle(d,u,{color:HYP,fill:true,label:'u'});
+    drawHandle(d,v,{color:HYP,fill:true,label:'v'});
+    const dh=poincDist(u,v,c);
+    eC.textContent=fmt(nrm(sub(u,v)));
+    eH.textContent=fmt(dh); eS.textContent=fmt(dh*dh);
+  }
+  bindDrag(cv,d,[
+    {get:()=>u,set:m=>u=projectIn(m,c,0.985)},
+    {get:()=>v,set:m=>v=projectIn(m,c,0.985)}
+  ],draw);
+  draw();
+})();
+
+/* ===================== 04 · EXP MAP ===================== */
+(function(){
+  const cv=document.getElementById('expCanvas'); if(!cv)return;
+  const d=makeDisk(cv); const c=1;
+  let v={x:0.55,y:0.35};   // tangent vector tip (can leave the disk)
+  const eT=document.getElementById('exp-tan'),eB=document.getElementById('exp-ball'),eC=document.getElementById('exp-comp');
+  function draw(){
+    // square stage: draw a bounding frame + the ball
+    const {ctx,cx,cy,R}=d;
+    ctx.clearRect(0,0,d.W,d.H);
+    // frame for tangent (flat) space
+    ctx.strokeStyle="rgba(244,162,89,0.20)";ctx.lineWidth=1;
+    ctx.strokeRect(cx-R*1.0,cy-R*1.0,R*2,R*2);
+    drawBall(d,{grid:true});
+    const ev=expZero(v,c);
+    // tangent arrow (amber) from origin to v
+    drawArrow(d,{x:0,y:0},v,EUCL,2.4);
+    // image (cyan) on the ball
+    drawArrow(d,{x:0,y:0},ev,HYP,2.4);
+    // connector
+    ctx.save();ctx.setLineDash([3,5]);ctx.strokeStyle="rgba(255,255,255,0.25)";ctx.lineWidth=1;
+    const a=d.toPx(v),b=d.toPx(ev);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();
+    drawHandle(d,v,{color:EUCL,fill:true,label:'v'});
+    drawHandle(d,ev,{color:HYP,fill:true,r:6});
+    eT.textContent=fmt(nrm(v));eB.textContent=fmt(nrm(ev));
+    eC.textContent=fmt(nrm(v)>1e-6?nrm(ev)/nrm(v):1,2)+'×';
+  }
+  bindDrag(cv,d,[{get:()=>v,set:m=>v={x:Math.max(-1.4,Math.min(1.4,m.x)),y:Math.max(-1.4,Math.min(1.4,m.y))}}],draw);
+  draw();
+})();
+
+/* ===================== 06 · HYPERBOLIC MLR ===================== */
+(function(){
+  const cv=document.getElementById('mlrCanvas'); if(!cv)return;
+  const d=makeDisk(cv); const c=1;
+  let p={x:0.20,y:0.0};
+  let aAng=Math.PI/2, aLen=0.32;        // normal direction handle (arrow tip in model coords from p)
+  let showEu=false;
+  const eP=document.getElementById('mlr-p'),ePn=document.getElementById('mlr-pn'),eA=document.getElementById('mlr-a');
+  const W=cv.width,H=cv.height;
+  const ctx=cv.getContext('2d');
+  // offscreen low-res field buffer
+  const N=140; const buf=document.createElement('canvas'); buf.width=N;buf.height=N;
+  const bctx=buf.getContext('2d'); const img=bctx.createImageData(N,N);
+  function field(){
+    const a={x:Math.cos(aAng),y:Math.sin(aAng)};
+    const data=img.data;
+    for(let j=0;j<N;j++){
+      for(let i=0;i<N;i++){
+        const mx=(i/(N-1))*2-1, my=-((j/(N-1))*2-1);
+        const idx=(j*N+i)*4;
+        if(mx*mx+my*my>=1){ data[idx+3]=0; continue; }
+        const x={x:mx,y:my};
+        const vk=mobAdd(neg(p),x,c);
+        const val=dot(vk,a);             // sign decides half-space
+        const t=Math.tanh(val*3.0);
+        if(t>=0){ data[idx]=84;data[idx+1]=226;data[idx+2]=198; data[idx+3]=Math.min(70,18+Math.abs(t)*70);}
+        else    { data[idx]=244;data[idx+1]=162;data[idx+2]=89; data[idx+3]=Math.min(70,18+Math.abs(t)*70);}
+      }
+    }
+    bctx.putImageData(img,0,0);
+  }
+  function draw(){
+    field();
+    ctx.clearRect(0,0,W,H);
+    const {cx,cy,R}=d;
+    // clip to disk and draw field
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    ctx.imageSmoothingEnabled=true;
+    ctx.drawImage(buf,cx-R,cy-R,R*2,R*2);
+    ctx.restore();
+    drawBall(d,{grid:false});
+    const a={x:Math.cos(aAng),y:Math.sin(aAng)};
+    // hyperbolic boundary: trace zero-set by marching the normal's perpendicular geodesic-ish — sample
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    ctx.strokeStyle="#ffffff";ctx.lineWidth=2.2;ctx.lineCap="round";
+    // parametric: boundary = { x : <(-p)⊕x, a> = 0 }. Sample by sweeping angle of a perpendicular line in v-space then mapping back: x = p ⊕ v, v ⟂ a.
+    const perp={x:-a.y,y:a.x};
+    ctx.beginPath();
+    let started=false;
+    for(let t=-1.6;t<=1.6;t+=0.01){
+      const v=scl(perp,t);
+      if(n2(v)>=1) {started=false;continue;}
+      const x=mobAdd(p,v,c);
+      if(n2(x)>=1){started=false;continue;}
+      const q=d.toPx(x);
+      if(!started){ctx.moveTo(q.x,q.y);started=true;} else ctx.lineTo(q.x,q.y);
+    }
+    ctx.stroke();
+    // euclidean comparison boundary (straight line through p, ⟂ a)
+    if(showEu){
+      ctx.setLineDash([5,6]);ctx.strokeStyle="rgba(244,162,89,0.85)";ctx.lineWidth=1.6;
+      const e1=add(p,scl(perp,3)), e2=add(p,scl(perp,-3));
+      const A=d.toPx(e1),B=d.toPx(e2);
+      ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.setLineDash([]);
+    }
+    ctx.restore();
+    // normal arrow from p
+    const tip=add(p,scl(a,aLen));
+    drawArrow(d,p,tip,EUCL,2.4);
+    drawHandle(d,tip,{color:EUCL,fill:true,r:6,ring:false});
+    drawHandle(d,p,{color:HYP,fill:true,label:'p'});
+    eP.textContent=vstr(p);ePn.textContent=fmt(nrm(p));
+    eA.textContent=Math.round((aAng*180/Math.PI+360)%360)+'°';
+  }
+  bindDrag(cv,d,[
+    {get:()=>add(p,scl({x:Math.cos(aAng),y:Math.sin(aAng)},aLen)),
+     set:m=>{const dv=sub(m,p);aAng=Math.atan2(dv.y,dv.x);aLen=Math.max(0.12,Math.min(0.6,nrm(dv)));}},
+    {get:()=>p,set:m=>p=projectIn(m,c,0.9)}
+  ],draw);
+  const tog=document.getElementById('mlr-toggle');
+  tog.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    tog.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); showEu=(b.dataset.v==='on'); draw();
+  }));
+  draw();
+})();
+
+/* ===================== 07 · VOLUME CHART ===================== */
+(function(){
+  const cv=document.getElementById('volCanvas'); if(!cv)return;
+  const ctx=cv.getContext('2d'); const W=cv.width,H=cv.height;
+  let c=1, logScale=false;
+  const cval=document.getElementById('vol-cval'),slider=document.getElementById('vol-c');
+  const eE=document.getElementById('vol-e'),eH=document.getElementById('vol-h'),eR=document.getElementById('vol-r');
+  const pad={l:50,r:18,t:22,b:34};
+  function euc(r){return 2*Math.PI*r;}
+  function hyp(r){const s=Math.sqrt(c);return 2*Math.PI*Math.sinh(s*r)/s;}
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const rmax=4;
+    const vmaxLin=Math.max(hyp(rmax),euc(rmax))*1.05;
+    const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+    const X=r=>pad.l+(r/rmax)*plotW;
+    const Yv=v=>{
+      if(logScale){const lv=Math.log10(Math.max(v,0.5));const lm=Math.log10(vmaxLin);
+        return pad.t+plotH-(lv/lm)*plotH;}
+      return pad.t+plotH-(v/vmaxLin)*plotH;
+    };
+    // axes
+    ctx.strokeStyle="rgba(124,119,196,0.25)";ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,pad.t+plotH);ctx.lineTo(pad.l+plotW,pad.t+plotH);ctx.stroke();
+    ctx.fillStyle=FAINT;ctx.font="10px 'IBM Plex Mono'";
+    for(let r=0;r<=rmax;r++){ctx.fillText('r='+r,X(r)-8,pad.t+plotH+16);}
+    ctx.save();ctx.translate(13,pad.t+plotH/2);ctx.rotate(-Math.PI/2);
+    ctx.fillText(logScale?'log circumference':'circumference',-44,0);ctx.restore();
+    // curves
+    function curve(fn,color){
+      ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.beginPath();
+      for(let i=0;i<=200;i++){const r=(i/200)*rmax;const x=X(r),y=Yv(fn(r));
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+      ctx.stroke();
+    }
+    curve(euc,EUCL); curve(hyp,HYP);
+    // marker at r=3
+    const r0=3;
+    [['eucl',euc,EUCL],['hyp',hyp,HYP]].forEach(([_,fn,col])=>{
+      const x=X(r0),y=Yv(fn(r0));
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,4,0,7);ctx.fill();
+    });
+    ctx.strokeStyle="rgba(255,255,255,0.12)";ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(X(r0),pad.t);ctx.lineTo(X(r0),pad.t+plotH);ctx.stroke();ctx.setLineDash([]);
+    eE.textContent=fmt(euc(r0),1);eH.textContent=fmt(hyp(r0),1);
+    eR.textContent=fmt(hyp(r0)/euc(r0),1)+'×';
+  }
+  slider.addEventListener('input',()=>{c=parseFloat(slider.value);cval.textContent='c = '+fmt(c);draw();});
+  const tog=document.getElementById('vol-toggle');
+  tog.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    tog.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');logScale=(b.dataset.v==='log');draw();
+  }));
+  draw();
+})();
+
+/* ===================== HERO BACKGROUND ===================== */
+(function(){
+  const cv=document.getElementById('heroCanvas'); if(!cv)return;
+  const ctx=cv.getContext('2d');
+  let W,H,cx,cy,R,arcs=[];
+  function resize(){
+    W=cv.width=cv.offsetWidth*Math.min(2,window.devicePixelRatio||1);
+    H=cv.height=cv.offsetHeight*Math.min(2,window.devicePixelRatio||1);
+    cx=W/2;cy=H*0.5;R=Math.min(W,H)*0.62;
+    arcs=[];
+    // generate geodesic arcs: random orthogonal circles to the boundary
+    for(let i=0;i<26;i++){
+      const ang=Math.random()*Math.PI*2;
+      const dcen=1.05+Math.random()*1.4;             // center distance (model units, >1)
+      const C={x:Math.cos(ang)*dcen,y:Math.sin(ang)*dcen};
+      const rr=Math.sqrt(C.x*C.x+C.y*C.y-1);          // orthogonality
+      arcs.push({C,rr,ph:Math.random()*6.28,sp:0.0006+Math.random()*0.0014});
+    }
+  }
+  function frame(t){
+    ctx.clearRect(0,0,W,H);
+    // glow
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+    g.addColorStop(0,"rgba(84,226,198,0.05)");g.addColorStop(0.6,"rgba(84,226,198,0.012)");g.addColorStop(1,"rgba(10,10,19,0)");
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    arcs.forEach(a=>{
+      const op=0.05+0.05*(0.5+0.5*Math.sin(t*a.sp+a.ph));
+      ctx.strokeStyle=`rgba(124,119,196,${op})`;ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.arc(cx+a.C.x*R, cy+a.C.y*R, a.rr*R, 0, 7);
+      ctx.stroke();
+    });
+    // crowding rings
+    for(let k=1;k<=7;k++){
+      const rr=Math.tanh(k*0.40);
+      ctx.strokeStyle=`rgba(84,226,198,${0.05+0.02*Math.sin(t*0.0008+k)})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(cx,cy,rr*R,0,7);ctx.stroke();
+    }
+    ctx.restore();
+    // rim
+    ctx.strokeStyle="rgba(139,134,214,0.5)";ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
+    requestAnimationFrame(frame);
+  }
+  const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  resize();window.addEventListener('resize',resize);
+  if(reduce){ frame(0); } else requestAnimationFrame(frame);
+})();
+
+/* ===================== KaTeX ===================== */
+window.addEventListener('DOMContentLoaded',()=>{
+  function render(){
+    if(window.renderMathInElement){
+      renderMathInElement(document.body,{
+        delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        throwOnError:false
+      });
+    } else setTimeout(render,60);
+  }
+  render();
+});
+
+/* history widgets (own scope) */
+(function(){
+/* ===== shared Poincaré helpers (unit disk, c=1) ===== */
+const dot=(a,b)=>a.x*b.x+a.y*b.y, n2=a=>a.x*a.x+a.y*a.y, nrm=a=>Math.hypot(a.x,a.y);
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y}), neg=a=>({x:-a.x,y:-a.y}), scl=(a,s)=>({x:a.x*s,y:a.y*s});
+const unit=v=>{const r=nrm(v);return r<1e-12?{x:0,y:0}:scl(v,1/r);};
+function mobAdd(u,v,c){const uv=dot(u,v),u2=n2(u),v2=n2(v);const c1=1+2*c*uv+c*v2,c2=1-c*u2,den=1+2*c*uv+c*c*u2*v2;return{x:(c1*u.x+c2*v.x)/den,y:(c1*u.y+c2*v.y)/den};}
+function circle3(a,b,d){const A=2*(a.x*(b.y-d.y)+b.x*(d.y-a.y)+d.x*(a.y-b.y));if(Math.abs(A)<1e-9)return null;
+  const a2=n2(a),b2=n2(b),d2=n2(d);
+  const cx=(a2*(b.y-d.y)+b2*(d.y-a.y)+d2*(a.y-b.y))/A, cy=(a2*(d.x-b.x)+b2*(a.x-d.x)+d2*(b.x-a.x))/A;
+  return {cx,cy,r:Math.hypot(a.x-cx,a.y-cy)};}
+const HYP="#54e2c6",EUCL="#f4a259",FAINT="#615d80",BND="#7c77c4";
+
+function makeDisk(canvas){const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=Math.min(W,H)*0.5-14;
+  return {ctx:canvas.getContext('2d'),W,H,cx,cy,R,
+    toPx:p=>({x:cx+p.x*R,y:cy-p.y*R}), toModel:q=>({x:(q.x-cx)/R,y:-(q.y-cy)/R})};}
+function drawBall(d,grid){const {ctx,cx,cy,R}=d;ctx.clearRect(0,0,d.W,d.H);
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);g.addColorStop(0,"rgba(84,226,198,0.06)");
+  g.addColorStop(0.7,"rgba(84,226,198,0.015)");g.addColorStop(1,"rgba(10,10,19,0)");
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+  if(grid){ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    ctx.strokeStyle="rgba(124,119,196,0.13)";ctx.lineWidth=1;
+    for(let k=0;k<12;k++){const a=k*Math.PI/6;ctx.beginPath();
+      ctx.moveTo(cx-Math.cos(a)*R,cy-Math.sin(a)*R);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);ctx.stroke();}
+    for(let k=1;k<=6;k++){const rr=Math.tanh(k*0.42);ctx.beginPath();ctx.arc(cx,cy,rr*R,0,7);ctx.stroke();}
+    ctx.restore();}
+  ctx.lineWidth=2.2;const rim=ctx.createLinearGradient(cx-R,cy-R,cx+R,cy+R);
+  rim.addColorStop(0,"#8b86d6");rim.addColorStop(1,"#6f6ab0");ctx.strokeStyle=rim;
+  ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();}
+function drawGeo(d,p,q,color,width){const {ctx,cx,cy,R}=d;ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+  ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap="round";
+  const pn=n2(p);let circ=null;
+  if(pn>1e-9){const pinv=scl(p,1/pn);circ=circle3(p,q,pinv);}
+  if(!circ){const a=d.toPx(p),b=d.toPx(q);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+  else{const C={x:cx+circ.cx*R,y:cy-circ.cy*R};ctx.beginPath();ctx.arc(C.x,C.y,circ.r*R,0,7);ctx.stroke();}
+  ctx.restore();}
+function handle(d,p,color,label,fill){const {ctx}=d,q=d.toPx(p);ctx.save();
+  ctx.shadowColor=color;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(q.x,q.y,7,0,7);
+  if(fill){ctx.fillStyle=color;ctx.fill();}else{ctx.fillStyle="#0a0a13";ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=color;ctx.stroke();}
+  ctx.shadowBlur=0;if(label){ctx.fillStyle=color;ctx.font="600 13px 'IBM Plex Mono'";ctx.fillText(label,q.x+10,q.y-9);}ctx.restore();}
+function bindDrag(canvas,d,handles,redraw){let active=null;
+  const pos=e=>{const r=canvas.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left,y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+    return d.toModel({x:x*(canvas.width/r.width),y:y*(canvas.height/r.height)});};
+  const down=e=>{const m=pos(e);let best=null,bd=1e9;
+    handles.forEach(h=>{const px=d.toPx(h.get()),mp=d.toPx(m),dd=Math.hypot(px.x-mp.x,px.y-mp.y);
+      if(dd<bd&&dd<30){bd=dd;best=h;}});if(best){active=best;e.preventDefault();}};
+  const move=e=>{if(!active)return;active.set(pos(e));redraw();e.preventDefault();};
+  canvas.addEventListener('mousedown',down);canvas.addEventListener('touchstart',down,{passive:false});
+  window.addEventListener('mousemove',move);window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('mouseup',()=>active=null);window.addEventListener('touchend',()=>active=null);}
+const projectIn=(p,m=0.96)=>{const r=nrm(p);return r>m?scl(p,m/r):p;};
+
+/* ===== A · PARALLELS ===== */
+(function(){
+  const cv=document.getElementById('parCanvas'); if(!cv)return;
+  const d=makeDisk(cv);
+  // fixed line ell: ideal endpoints
+  const t1=2.5,t2=-2.5;
+  const I1={x:Math.cos(t1),y:Math.sin(t1)}, I2={x:Math.cos(t2),y:Math.sin(t2)};
+  let P={x:0.30,y:0.0};
+  const eMiss=document.getElementById('par-miss'),eCross=document.getElementById('par-cross');
+  const ang=p=>Math.atan2(p.y,p.x);
+  function linked(a1,a2,b1,b2){
+    const between=(x,lo,hi)=>{let dd=(hi-lo+2*Math.PI)%(2*Math.PI),e=(x-lo+2*Math.PI)%(2*Math.PI);return e<dd;};
+    return between(ang(b1),ang(a1),ang(a2))!==between(ang(b2),ang(a1),ang(a2));
+  }
+  function draw(){
+    drawBall(d,true);
+    let miss=0,cross=0;
+    const Ngeo=48;
+    for(let k=0;k<Ngeo;k++){
+      const al=k/Ngeo*Math.PI;
+      const e={x:Math.cos(al),y:Math.sin(al)};
+      const E1=unit(mobAdd(P,scl(e,0.999),1)), E2=unit(mobAdd(P,scl(neg(e),0.999),1));
+      const crosses=linked(I1,I2,E1,E2);
+      if(crosses){cross++;drawGeo(d,scl(E1,0.999),scl(E2,0.999),"rgba(244,162,89,0.5)",1.3);}
+      else{miss++;drawGeo(d,scl(E1,0.999),scl(E2,0.999),"rgba(84,226,198,0.55)",1.3);}
+    }
+    // ell on top, bold white
+    drawGeo(d,scl(I1,0.999),scl(I2,0.999),"#ffffff",2.6);
+    const li=d.toPx(scl(I1,0.86));
+    d.ctx.fillStyle="#fff";d.ctx.font="600 13px 'IBM Plex Mono'";d.ctx.fillText("ℓ",li.x,li.y);
+    handle(d,P,HYP,"P",true);
+    eMiss.textContent=miss; eCross.textContent=cross;
+  }
+  bindDrag(cv,d,[{get:()=>P,set:m=>P=projectIn(m,0.9)}],draw);
+  draw();
+})();
+
+/* ===== B · DEFECT TRIANGLE ===== */
+(function(){
+  const cv=document.getElementById('triCanvas'); if(!cv)return;
+  const d=makeDisk(cv);
+  let A={x:0.55,y:0.42}, B={x:-0.62,y:0.30}, C={x:0.05,y:-0.66};
+  const eA=document.getElementById('tri-a'),eB=document.getElementById('tri-b'),eC=document.getElementById('tri-c'),
+        eS=document.getElementById('tri-sum'),eD=document.getElementById('tri-def'),
+        eAr=document.getElementById('tri-area'),eP=document.getElementById('tri-pct');
+  const deg=r=>r*180/Math.PI;
+  function tangentToward(P,Q){const dir=unit(mobAdd(neg(P),Q,1));const near=mobAdd(P,scl(dir,1e-4),1);return unit(sub(near,P));}
+  function angleAt(P,Q,Rr){const t1=tangentToward(P,Q),t2=tangentToward(P,Rr);
+    return Math.acos(Math.max(-1,Math.min(1,dot(t1,t2))));}
+  function draw(){
+    drawBall(d,true);
+    const {ctx}=d;
+    // shade interior lightly by sampling? keep simple: draw 3 geodesic sides
+    // fill approximate interior using clipped path of straight chords (visual hint only)
+    ctx.save();
+    const pa=d.toPx(A),pb=d.toPx(B),pc=d.toPx(C);
+    ctx.beginPath();ctx.moveTo(pa.x,pa.y);ctx.lineTo(pb.x,pb.y);ctx.lineTo(pc.x,pc.y);ctx.closePath();
+    ctx.fillStyle="rgba(84,226,198,0.06)";ctx.fill();
+    ctx.restore();
+    drawGeo(d,A,B,HYP,2.4);drawGeo(d,B,C,HYP,2.4);drawGeo(d,C,A,HYP,2.4);
+    handle(d,A,HYP,"A",true);handle(d,B,HYP,"B",true);handle(d,C,HYP,"C",true);
+    const a=angleAt(A,B,C),b=angleAt(B,A,C),c=angleAt(C,A,B);
+    const sum=a+b+c, defect=Math.PI-sum;
+    eA.textContent=deg(a).toFixed(1)+"°";eB.textContent=deg(b).toFixed(1)+"°";eC.textContent=deg(c).toFixed(1)+"°";
+    eS.textContent=deg(sum).toFixed(1)+"°";eD.textContent=deg(defect).toFixed(1)+"°";
+    eAr.textContent=defect.toFixed(3);eP.textContent=(defect/Math.PI*100).toFixed(0)+"%";
+  }
+  bindDrag(cv,d,[
+    {get:()=>A,set:m=>A=projectIn(m,0.97)},
+    {get:()=>B,set:m=>B=projectIn(m,0.97)},
+    {get:()=>C,set:m=>C=projectIn(m,0.97)}
+  ],draw);
+  draw();
+})();
+
+/* ===== hero background: nested ideal triangles ===== */
+(function(){
+  const cv=document.getElementById('topCanvas'); if(!cv)return;
+  const ctx=cv.getContext('2d');let W,H,cx,cy,R,seeds=[];
+  function resize(){
+    W=cv.width=cv.offsetWidth*Math.min(2,window.devicePixelRatio||1);
+    H=cv.height=cv.offsetHeight*Math.min(2,window.devicePixelRatio||1);
+    cx=W/2;cy=H*0.5;R=Math.min(W,H)*0.62;
+    seeds=[];for(let i=0;i<22;i++){const a=Math.random()*6.28,dd=1.05+Math.random()*1.5;
+      const C={x:Math.cos(a)*dd,y:Math.sin(a)*dd};seeds.push({C,rr:Math.sqrt(C.x*C.x+C.y*C.y-1),ph:Math.random()*6.28,sp:0.0005+Math.random()*0.0013});}
+  }
+  function frame(t){
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);g.addColorStop(0,"rgba(84,226,198,0.05)");
+    g.addColorStop(0.6,"rgba(84,226,198,0.012)");g.addColorStop(1,"rgba(10,10,19,0)");
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    seeds.forEach(a=>{const op=0.05+0.05*(0.5+0.5*Math.sin(t*a.sp+a.ph));
+      ctx.strokeStyle=`rgba(124,119,196,${op})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(cx+a.C.x*R,cy+a.C.y*R,a.rr*R,0,7);ctx.stroke();});
+    ctx.restore();
+    ctx.strokeStyle="rgba(139,134,214,0.45)";ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
+    requestAnimationFrame(frame);
+  }
+  const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  resize();window.addEventListener('resize',resize);
+  if(reduce)frame(0);else requestAnimationFrame(frame);
+})();
+})();
+
+/* derivation widgets */
+/* ===== distance-integral interactive ===== */
+(function(){
+  const cv=document.getElementById('intCanvas'); if(!cv) return;
+  const ctx=cv.getContext('2d'); const W=cv.width,H=cv.height;
+  const atanh=z=>0.5*Math.log((1+z)/(1-z));
+  let c=1, r=0.6;
+  const pad={l:54,r:20,t:24,b:38};
+  const cval=document.getElementById('int-cval'), slider=document.getElementById('int-c');
+  const eR=document.getElementById('int-r'),eS=document.getElementById('int-sr'),
+        eF=document.getElementById('int-f'),eD=document.getElementById('int-d');
+  const HYP="#54e2c6",EUCL="#f4a259",FAINT="#615d80",BND="#7c77c4";
+
+  function lam(t){return 2/(1-c*t*t);}
+  function geom(){
+    const rmax=1/Math.sqrt(c);          // ball radius = right edge of x-axis
+    const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+    // y range: clamp integrand for display
+    const yclamp=lam(rmax*0.985);
+    const ymax=Math.min(yclamp, 26);
+    const X=t=>pad.l+(t/rmax)*plotW;
+    const Y=v=>pad.t+plotH-(Math.min(v,ymax)/ymax)*plotH;
+    return {rmax,plotW,plotH,ymax,X,Y};
+  }
+  function draw(){
+    const {rmax,plotW,plotH,ymax,X,Y}=geom();
+    ctx.clearRect(0,0,W,H);
+    // axes
+    ctx.strokeStyle="rgba(124,119,196,0.25)";ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,pad.t+plotH);ctx.lineTo(pad.l+plotW,pad.t+plotH);ctx.stroke();
+    ctx.fillStyle=FAINT;ctx.font="10px 'IBM Plex Mono'";
+    // x ticks
+    for(let k=0;k<=4;k++){const t=rmax*k/4;ctx.fillText(t.toFixed(2),X(t)-9,pad.t+plotH+15);}
+    ctx.fillText("t",pad.l+plotW-4,pad.t+plotH+15);
+    ctx.save();ctx.translate(15,pad.t+plotH/2);ctx.rotate(-Math.PI/2);
+    ctx.fillText("integrand  2/(1−ct²)",-58,0);ctx.restore();
+    // boundary asymptote at rmax
+    ctx.strokeStyle="rgba(124,119,196,0.4)";ctx.setLineDash([4,5]);
+    ctx.beginPath();ctx.moveTo(X(rmax),pad.t);ctx.lineTo(X(rmax),pad.t+plotH);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=BND;ctx.fillText("r = 1/√c  (edge)",X(rmax)-86,pad.t+10);
+
+    // shaded area 0..r (the distance)
+    ctx.beginPath();
+    ctx.moveTo(X(0),Y(lam(0)));
+    const Nfill=240;
+    for(let i=0;i<=Nfill;i++){const t=r*i/Nfill;ctx.lineTo(X(t),Y(lam(t)));}
+    ctx.lineTo(X(r),Y(0));ctx.lineTo(X(0),Y(0));ctx.closePath();
+    const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+plotH);
+    grad.addColorStop(0,"rgba(84,226,198,0.32)");grad.addColorStop(1,"rgba(84,226,198,0.05)");
+    ctx.fillStyle=grad;ctx.fill();
+
+    // full integrand curve
+    ctx.strokeStyle=EUCL;ctx.lineWidth=2.2;ctx.beginPath();
+    const N=400;let started=false;
+    for(let i=0;i<=N;i++){const t=rmax*i/N; if(t>=rmax)break; const y=lam(t);
+      const px=X(t),py=Y(y); if(!started){ctx.moveTo(px,py);started=true;}else ctx.lineTo(px,py);}
+    ctx.stroke();
+
+    // r handle (vertical line + grip)
+    ctx.strokeStyle=HYP;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(X(r),pad.t);ctx.lineTo(X(r),pad.t+plotH);ctx.stroke();
+    ctx.fillStyle=HYP;ctx.beginPath();ctx.arc(X(r),pad.t+plotH,7,0,7);ctx.fill();
+    ctx.fillStyle="#06231d";ctx.font="600 9px 'IBM Plex Mono'";ctx.fillText("r",X(r)-3,pad.t+plotH+3);
+
+    // distance label inside area
+    const dist=(2/Math.sqrt(c))*atanh(Math.min(Math.sqrt(c)*r,1-1e-9));
+    ctx.fillStyle=HYP;ctx.font="600 12px 'IBM Plex Mono'";
+    if(r>0.18*rmax) ctx.fillText("area = d = "+dist.toFixed(3), X(r*0.30), pad.t+plotH-12);
+
+    // readouts
+    eR.textContent=r.toFixed(2);
+    eS.textContent=(Math.sqrt(c)*r).toFixed(3);
+    eF.textContent=lam(r).toFixed(2);
+    eD.textContent=dist.toFixed(3);
+  }
+  // drag
+  function setFromX(clientX){
+    const rect=cv.getBoundingClientRect();
+    const px=(clientX-rect.left)*(W/rect.width);
+    const {rmax,plotW}=geom();
+    let t=((px-pad.l)/plotW)*rmax;
+    r=Math.max(0.001,Math.min(rmax*0.985,t));
+    draw();
+  }
+  let drag=false;
+  const dn=e=>{drag=true;setFromX(e.touches?e.touches[0].clientX:e.clientX);e.preventDefault();};
+  const mv=e=>{if(drag)setFromX(e.touches?e.touches[0].clientX:e.clientX);};
+  const up=()=>drag=false;
+  cv.addEventListener('mousedown',dn);cv.addEventListener('touchstart',dn,{passive:false});
+  window.addEventListener('mousemove',mv);window.addEventListener('touchmove',mv,{passive:false});
+  window.addEventListener('mouseup',up);window.addEventListener('touchend',up);
+  slider.addEventListener('input',()=>{c=parseFloat(slider.value);cval.textContent='c = '+c.toFixed(2);
+    const rmax=1/Math.sqrt(c); if(r>rmax*0.985)r=rmax*0.6; draw();});
+  draw();
+})();
+
+/* ===== Eq(4)/Eq(5) live verifier ===== */
+(function(){
+  const cv=document.getElementById('verCanvas'); if(!cv)return;
+  const dot=(a,b)=>a.x*b.x+a.y*b.y, n2=a=>a.x*a.x+a.y*a.y, nrm=a=>Math.hypot(a.x,a.y);
+  const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y}), neg=a=>({x:-a.x,y:-a.y}), scl=(a,s)=>({x:a.x*s,y:a.y*s});
+  const atanh=z=>0.5*Math.log((1+z)/(1-z)), acosh=z=>Math.log(z+Math.sqrt(z*z-1));
+  function mobAdd(u,v){const uv=dot(u,v),u2=n2(u),v2=n2(v);const c1=1+2*uv+v2,c2=1-u2,den=1+2*uv+u2*v2;return{x:(c1*u.x+c2*v.x)/den,y:(c1*u.y+c2*v.y)/den};}
+  function circle3(a,b,d){const A=2*(a.x*(b.y-d.y)+b.x*(d.y-a.y)+d.x*(a.y-b.y));if(Math.abs(A)<1e-9)return null;
+    const a2=n2(a),b2=n2(b),d2=n2(d);
+    const cx=(a2*(b.y-d.y)+b2*(d.y-a.y)+d2*(a.y-b.y))/A, cy=(a2*(d.x-b.x)+b2*(a.x-d.x)+d2*(b.x-a.x))/A;
+    return {cx,cy,r:Math.hypot(a.x-cx,a.y-cy)};}
+  const HYP="#54e2c6",EUCL="#f4a259";
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2,R=Math.min(W,H)*0.5-14;
+  const ctx=cv.getContext('2d');
+  const toPx=p=>({x:cx+p.x*R,y:cy-p.y*R}), toModel=q=>({x:(q.x-cx)/R,y:-(q.y-cy)/R});
+  let x={x:0.42,y:0.30}, y={x:-0.48,y:0.18};
+  const eT=document.getElementById('ver-t'),eC=document.getElementById('ver-c'),eM=document.getElementById('ver-m'),
+        eAM=document.getElementById('ver-am'),eAE=document.getElementById('ver-ae');
+  function ball(){
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);g.addColorStop(0,"rgba(84,226,198,0.06)");
+    g.addColorStop(0.7,"rgba(84,226,198,0.015)");g.addColorStop(1,"rgba(10,10,19,0)");
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    ctx.strokeStyle="rgba(124,119,196,0.12)";ctx.lineWidth=1;
+    for(let k=0;k<12;k++){const a=k*Math.PI/6;ctx.beginPath();
+      ctx.moveTo(cx-Math.cos(a)*R,cy-Math.sin(a)*R);ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);ctx.stroke();}
+    for(let k=1;k<=5;k++){const rr=Math.tanh(k*0.42);ctx.beginPath();ctx.arc(cx,cy,rr*R,0,7);ctx.stroke();}
+    ctx.restore();
+    ctx.lineWidth=2.2;ctx.strokeStyle="#7c77c4";ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
+  }
+  function geo(p,q,color){ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
+    ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.lineCap="round";
+    const pn=n2(p);let circ=null;if(pn>1e-9){circ=circle3(p,q,scl(p,1/pn));}
+    if(!circ){const a=toPx(p),b=toPx(q);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    else{const C={x:cx+circ.cx*R,y:cy-circ.cy*R};ctx.beginPath();ctx.arc(C.x,C.y,circ.r*R,0,7);ctx.stroke();}
+    ctx.restore();}
+  function ray(p,color){const o=toPx({x:0,y:0}),a=toPx(p);ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.4;
+    ctx.setLineDash([4,5]);ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(a.x,a.y);ctx.stroke();ctx.restore();}
+  function dot2(p,color,label){const q=toPx(p);ctx.save();ctx.shadowColor=color;ctx.shadowBlur=10;
+    ctx.beginPath();ctx.arc(q.x,q.y,7,0,7);ctx.fillStyle=color;ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle=color;ctx.font="600 13px 'IBM Plex Mono'";ctx.fillText(label,q.x+10,q.y-9);ctx.restore();}
+  function draw(){
+    ball();
+    ray(x,"rgba(244,162,89,0.5)");ray(y,"rgba(244,162,89,0.5)");
+    geo(x,y,HYP);
+    dot2(x,HYP,"x");dot2(y,HYP,"y");
+    const a=nrm(mobAdd(neg(x),y));
+    const dT=2*atanh(Math.min(a,1-1e-9));
+    const xy=n2(sub(x,y));
+    const dC=acosh(1+2*xy/((1-n2(x))*(1-n2(y))));
+    // angle between vectors x,y: metric (λ cancels) vs euclid
+    const lam=2/(1-0); // at origin; cancels anyway
+    const cosM=(lam*lam*dot(x,y))/(Math.sqrt(lam*lam*n2(x))*Math.sqrt(lam*lam*n2(y)));
+    const cosE=dot(x,y)/(nrm(x)*nrm(y));
+    eT.textContent=dT.toFixed(4);eC.textContent=dC.toFixed(4);
+    eM.textContent=Math.abs(dT-dC)<1e-6?"✓ exact":"Δ "+Math.abs(dT-dC).toExponential(1);
+    eM.style.color=Math.abs(dT-dC)<1e-6?HYP:EUCL;
+    eAM.textContent=(Math.acos(Math.max(-1,Math.min(1,cosM)))*180/Math.PI).toFixed(2)+"°";
+    eAE.textContent=(Math.acos(Math.max(-1,Math.min(1,cosE)))*180/Math.PI).toFixed(2)+"°";
+  }
+  function pick(e){const r=cv.getBoundingClientRect();
+    const px=((e.touches?e.touches[0].clientX:e.clientX)-r.left)*(W/r.width);
+    const py=((e.touches?e.touches[0].clientY:e.clientY)-r.top)*(H/r.height);
+    return toModel({x:px,y:py});}
+  let act=null;
+  const proj=p=>{const r=nrm(p);return r>0.95?scl(p,0.95/r):p;};
+  const down=e=>{const m=pick(e);
+    if(Math.hypot(toPx(x).x-toPx(m).x,toPx(x).y-toPx(m).y)<30)act='x';
+    else if(Math.hypot(toPx(y).x-toPx(m).x,toPx(y).y-toPx(m).y)<30)act='y';
+    if(act)e.preventDefault();};
+  const move=e=>{if(!act)return;const m=proj(pick(e));if(act==='x')x=m;else y=m;draw();e.preventDefault();};
+  cv.addEventListener('mousedown',down);cv.addEventListener('touchstart',down,{passive:false});
+  window.addEventListener('mousemove',move);window.addEventListener('touchmove',move,{passive:false});
+  window.addEventListener('mouseup',()=>act=null);window.addEventListener('touchend',()=>act=null);
+  draw();
+})();
+
+function boot(){
+  (function render(){
+    if(window.renderMathInElement){renderMathInElement(document.body,{
+      delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});}
+    else setTimeout(render,60);
+  })();
+  var SLUGS=['overview','history','networks','geometry','layers','synthesis'];
+  var tabs={};SLUGS.forEach(function(s){tabs[s]=document.querySelector('.appnav .tabs a[data-route="'+s+'"]');});
+  var bar=document.getElementById('progbar');
+  function onScroll(){
+    var d=document.documentElement, max=d.scrollHeight-d.clientHeight, sy=window.scrollY||d.scrollTop;
+    if(bar)bar.style.width=(max>0?(sy/max*100):0)+'%';
+    var cur=SLUGS[0], y=sy+96;
+    SLUGS.forEach(function(s){var el=document.getElementById(s); if(el&&el.offsetTop<=y)cur=s;});
+    SLUGS.forEach(function(s){if(tabs[s])tabs[s].classList.toggle('active',s===cur);});
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',onScroll);onScroll();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+</script>
+</body>
+</html>

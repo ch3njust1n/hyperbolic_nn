@@ -5,6 +5,17 @@ We recommend reading [our blog](http://www.hyperbolicdeeplearning.com/) for an i
 
 Source lives in `src/services/hyperbolic-nn/`.
 
+## Docs (HTML)
+
+Serve `./docs/index.html` locally (no image build; nginx pulls on first run):
+
+```bash
+cp .env.example .env
+docker compose up docs-server
+```
+
+Open [http://localhost:8080](http://localhost:8080) (override with `DOCS_PORT` in `.env`).
+
 ## Docker (recommended)
 
 ```bash
