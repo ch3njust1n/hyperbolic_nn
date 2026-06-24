@@ -3,6 +3,15 @@ networks:
     driver: bridge
 
 services:
+  docs-server:
+    image: nginx:1.27-alpine
+    ports:
+      - "${DOCS_PORT:-8080}:80"
+    volumes:
+      - ./docs:/usr/share/nginx/html:ro
+    networks:
+      - tpc-network
+
   hyperbolic-nn:
     image: hyperbolic-nn:${IMAGE_TAG:-v0-dev}
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
